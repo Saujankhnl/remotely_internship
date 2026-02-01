@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}<title>My Applications - Remotely</title>{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <!-- Header -->
+    <nav class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <a href="{% url 'accounts:dashboard' %}" class="flex items-center gap-2 text-gray-300 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+                Dashboard
+            </a>
+            <a href="{% url 'internships:internship_list' %}" class="text-indigo-400 hover:text-indigo-300 text-sm">
+                Browse Internships
+            </a>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 py-6">
+        <h1 class="text-2xl font-bold text-white mb-6">My Applications</h1>
+
+        {% if messages %}
+        <div class="mb-6">
+            {% for message in messages %}
+            <div class="bg-green-500 bg-opacity-20 border border-green-500 text-green-400 px-4 py-3 rounded-xl text-sm">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Stats -->
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
+            <div class="bg-gray-800 border border-gray-700 rounded-xl p-4">
+                <p class="text-2xl font-bold text-white">{{ applications|length }}</p>
+                <p class="text-gray-400 text-sm">Total</p>
+            </div>
+            <div class="bg-gray-800 border border-gray-700 rounded-xl p-4">
+                <p class="text-2xl font-bold text-yellow-400">
+                    {% with pending=0 %}{% for a in applications %}{% if a.status == 'pending' %}{% with pending=pending|add:1 %}{% endwith %}{% endif %}{% endfor %}{{ pending|default:0 }}{% endwith %}
+                </p>
+                <p class="text-gray-400 text-sm">Pending</p>
+            </div>
+            <div class="bg-gray-800 border border-gray-700 rounded-xl p-4">
+                <p class="text-2xl font-bold text-purple-400">
+                    {% with shortlisted=0 %}{% for a in applications %}{% if a.status == 'shortlisted' %}{% with shortlisted=shortlisted|add:1 %}{% endwith %}{% endif %}{% endfor %}{{ shortlisted|default:0 }}{% endwith %}
+                </p>
+                <p class="text-gray-400 text-sm">Shortlisted</p>
+            </div>
+            <div class="bg-gray-800 border border-gray-700 rounded-xl p-4">
+                <p class="text-2xl font-bold text-green-400">
+                    {% with accepted=0 %}{% for a in applications %}{% if a.status == 'accepted' %}{% with accepted=accepted|add:1 %}{% endwith %}{% endif %}{% endfor %}{{ accepted|default:0 }}{% endwith %}
+                </p>
+                <p class="text-gray-400 text-sm">Accepted</p>
+            </div>
+            <div class="bg-gray-800 border border-gray-700 rounded-xl p-4">
+                <p class="text-2xl font-bold text-red-400">
+                    {% with rejected=0 %}{% for a in applications %}{% if a.status == 'rejected' %}{% with rejected=rejected|add:1 %}{% endwith %}{% endif %}{% endfor %}{{ rejected|default:0 }}{% endwith %}
+                </p>
+                <p class="text-gray-400 text-sm">Rejected</p>
+            </div>
+        </div>
+
+        <!-- Applications List -->
+        <div class="space-y-4">
+            {% for application in applications %}
+            <div class="bg-gray-800 border border-gray-700 rounded-2xl p-5">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-3 mb-2">
+                            <h3 class="text-lg font-bold text-white">{{ application.internship.title }}</h3>
+                            <span class="px-2 py-1 text-xs rounded-full 
+                                {% if application.status == 'pending' %}bg-yellow-500
+                                {% elif application.status == 'reviewed' %}bg-blue-500
+                                {% elif application.status == 'shortlisted' %}bg-purple-500
+                                {% elif application.status == 'accepted' %}bg-green-500
+                                {% else %}bg-red-500{% endif %} text-white">
+                                {{ application.get_status_display }}
+                            </span>
+                        </div>
+                        
+                        <p class="text-gray-400 text-sm mb-2">
+                            {{ application.internship.company.company_profile.company_name|default:application.internship.company.username }}
+                        </p>
+                        
+                        <div class="flex flex-wrap items-center gap-4 text-gray-400 text-sm">
+                            <span class="flex items-center gap-1">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                </svg>
+                                {{ application.internship.location }}
+                            </span>
+                            <span class="flex items-center gap-1">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                Applied {{ application.applied_at|timesince }} ago
+                            </span>
+                            <span class="px-2 py-1 text-xs rounded {% if application.internship.internship_type == 'paid' %}bg-green-500 bg-opacity-20 text-green-400{% else %}bg-blue-500 bg-opacity-20 text-blue-400{% endif %}">
+                                {{ application.internship.get_internship_type_display }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-2">
+                        <a href="{% url 'internships:internship_detail' application.internship.pk %}" 
+                           class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition text-sm">
+                            View Internship
+                        </a>
+                        <a href="{% url 'internships:withdraw_application' application.pk %}" 
+                           class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition text-sm">
+                            Withdraw
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center py-12 bg-gray-800 border border-gray-700 rounded-2xl">
+                <svg class="w-16 h-16 text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <h3 class="text-xl font-semibold text-gray-400 mb-2">No applications yet</h3>
+                <p class="text-gray-500 mb-6">Start applying to internships to see them here</p>
+                <a href="{% url 'internships:internship_list' %}" 
+                   class="inline-block bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-semibold">
+                    Browse Internships
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+</div>
+{% endblock %}

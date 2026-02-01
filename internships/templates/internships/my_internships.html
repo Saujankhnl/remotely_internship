@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}<title>My Internships - Remotely</title>{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <!-- Header -->
+    <nav class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <a href="{% url 'accounts:dashboard' %}" class="flex items-center gap-2 text-gray-300 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+                Dashboard
+            </a>
+            <a href="{% url 'internships:create_internship' %}" 
+               class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                Post New
+            </a>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 py-6">
+        <h1 class="text-2xl font-bold text-white mb-6">My Internship Postings</h1>
+
+        {% if messages %}
+        <div class="mb-6">
+            {% for message in messages %}
+            <div class="bg-green-500 bg-opacity-20 border border-green-500 text-green-400 px-4 py-3 rounded-xl text-sm">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Stats -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+            <div class="bg-gray-800 border border-gray-700 rounded-xl p-4">
+                <p class="text-2xl font-bold text-white">{{ internships|length }}</p>
+                <p class="text-gray-400 text-sm">Total Posts</p>
+            </div>
+            <div class="bg-gray-800 border border-gray-700 rounded-xl p-4">
+                <p class="text-2xl font-bold text-green-400">{{ internships|length }}</p>
+                <p class="text-gray-400 text-sm">Open</p>
+            </div>
+            <div class="bg-gray-800 border border-gray-700 rounded-xl p-4">
+                {% with total_apps=0 %}
+                <p class="text-2xl font-bold text-blue-400">
+                    {% for i in internships %}{% with total_apps=total_apps|add:i.application_count %}{% endwith %}{% endfor %}
+                    {{ internships.0.application_count|default:0 }}
+                </p>
+                {% endwith %}
+                <p class="text-gray-400 text-sm">Applications</p>
+            </div>
+            <div class="bg-gray-800 border border-gray-700 rounded-xl p-4">
+                <p class="text-2xl font-bold text-purple-400">{{ internships|length }}</p>
+                <p class="text-gray-400 text-sm">This Month</p>
+            </div>
+        </div>
+
+        <!-- Internship List -->
+        <div class="space-y-4">
+            {% for internship in internships %}
+            <div class="bg-gray-800 border border-gray-700 rounded-2xl p-5">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-3 mb-2">
+                            <h3 class="text-lg font-bold text-white">{{ internship.title }}</h3>
+                            <span class="px-2 py-1 text-xs rounded-full {% if internship.status == 'open' %}bg-green-500{% else %}bg-gray-500{% endif %} text-white">
+                                {{ internship.get_status_display }}
+                            </span>
+                            <span class="px-2 py-1 text-xs rounded-full {% if internship.internship_type == 'paid' %}bg-blue-500{% else %}bg-purple-500{% endif %} text-white">
+                                {{ internship.get_internship_type_display }}
+                            </span>
+                        </div>
+                        
+                        <div class="flex flex-wrap items-center gap-4 text-gray-400 text-sm">
+                            <span class="flex items-center gap-1">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                </svg>
+                                {{ internship.location }}
+                            </span>
+                            <span class="flex items-center gap-1">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                Posted {{ internship.created_at|timesince }} ago
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Application Count -->
+                    <a href="{% url 'internships:view_applications' internship.pk %}" 
+                       class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 rounded-xl transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                        <span class="font-bold">{{ internship.application_count }}</span>
+                        <span class="text-sm">Applications</span>
+                    </a>
+                </div>
+                
+                <!-- Actions -->
+                <div class="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-700">
+                    <a href="{% url 'internships:internship_detail' internship.pk %}" 
+                       class="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-lg transition">
+                        View
+                    </a>
+                    <a href="{% url 'internships:edit_internship' internship.pk %}" 
+                       class="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-lg transition">
+                        Edit
+                    </a>
+                    <form method="post" action="{% url 'internships:toggle_status' internship.pk %}" class="inline">
+                        {% csrf_token %}
+                        <button type="submit" 
+                                class="px-3 py-2 {% if internship.status == 'open' %}bg-yellow-600 hover:bg-yellow-700{% else %}bg-green-600 hover:bg-green-700{% endif %} text-white text-sm rounded-lg transition">
+                            {% if internship.status == 'open' %}Close{% else %}Reopen{% endif %}
+                        </button>
+                    </form>
+                    <a href="{% url 'internships:delete_internship' internship.pk %}" 
+                       class="px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition">
+                        Delete
+                    </a>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center py-12 bg-gray-800 border border-gray-700 rounded-2xl">
+                <svg class="w-16 h-16 text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                </svg>
+                <h3 class="text-xl font-semibold text-gray-400 mb-2">No internships posted yet</h3>
+                <p class="text-gray-500 mb-6">Create your first internship posting to start receiving applications</p>
+                <a href="{% url 'internships:create_internship' %}" 
+                   class="inline-block bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-semibold">
+                    Post Your First Internship
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+</div>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}<title>Verify OTP</title>{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center px-4 py-8 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <div class="bg-gray-800 p-6 sm:p-8 rounded-2xl shadow-2xl w-full max-w-sm border border-gray-700">
+        <div class="text-center mb-6">
+            <div class="w-16 h-16 bg-green-500 bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                </svg>
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-bold text-white">Verify OTP</h2>
+            <p class="text-gray-400 mt-2 text-sm">Enter the 6-digit code sent to</p>
+            <p class="text-indigo-400 font-medium text-sm break-all">{{ email }}</p>
+        </div>
+
+        {% if error %}
+            <div class="bg-red-500 bg-opacity-20 border border-red-500 text-red-400 px-4 py-3 rounded-xl mb-6 text-sm">
+                {{ error }}
+            </div>
+        {% endif %}
+
+        <form method="post" class="space-y-5">
+            {% csrf_token %}
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Enter OTP</label>
+                <input type="text" name="otp" maxlength="6" required inputmode="numeric" pattern="[0-9]*"
+                       class="w-full px-4 py-4 bg-gray-700 border border-gray-600 rounded-xl text-white text-center text-2xl tracking-widest placeholder-gray-400 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                       placeholder="000000">
+            </div>
+            
+            <button type="submit" 
+                    class="w-full bg-green-600 active:bg-green-700 text-white font-bold py-4 px-4 rounded-xl transition duration-200 text-base">
+                Verify OTP
+            </button>
+        </form>
+
+        <div class="text-center mt-6">
+            <p class="text-gray-400 text-sm">
+                Didn't receive the code? 
+                <a href="{% url 'accounts:forgot_password' %}" class="text-indigo-400 active:text-indigo-500 font-medium">Resend OTP</a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,333 @@
+from django.shortcuts import render, redirect
+from django.contrib.auth import login, authenticate, logout
+from django.contrib import messages
+from .forms import UserRegisterForm, CompanyRegisterForm, UserProfileForm, CompanyProfileForm
+from django.contrib.auth.decorators import login_required
+from django.conf import settings
+from .models import CustomUser, PasswordResetOTP, UserProfile, CompanyProfile
+import secrets
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+def send_otp_email(to_email, otp, user_type='user'):
+    """Send OTP email using SendGrid"""
+    
+    # Always print OTP to console in DEBUG mode for testing
+    if settings.DEBUG:
+        print(f"\n{'='*50}")
+        print(f"[OTP] Code for {to_email}: {otp}")
+        print(f"{'='*50}\n")
+        # In DEBUG mode, always return True so the flow continues
+        # The OTP is printed above, so you can use it for testing
+        return True
+    
+    # Production: Try to send via SendGrid
+    if not settings.SENDGRID_API_KEY:
+        logger.error("SENDGRID_API_KEY is not set")
+        return False
+    
+    try:
+        from sendgrid import SendGridAPIClient
+        from sendgrid.helpers.mail import Mail
+    except ImportError:
+        logger.error("SendGrid not installed. Run: pip install sendgrid")
+        return False
+    
+    subject = 'Password Reset OTP - Remotely'
+    
+    if user_type == 'company':
+        greeting = "Dear Company Admin"
+    else:
+        greeting = "Dear User"
+    
+    html_content = f'''
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #4F46E5;">Remotely - Password Reset</h2>
+        <p>{greeting},</p>
+        <p>You have requested to reset your password. Use the OTP below to proceed:</p>
+        <div style="background-color: #F3F4F6; padding: 20px; text-align: center; margin: 20px 0;">
+            <h1 style="color: #4F46E5; letter-spacing: 5px; margin: 0;">{otp}</h1>
+        </div>
+        <p><strong>This OTP is valid for 5 minutes.</strong></p>
+        <p>If you didn't request this, please ignore this email.</p>
+        <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 20px 0;">
+        <p style="color: #6B7280; font-size: 12px;">This is an automated message from Remotely. Please do not reply.</p>
+    </div>
+    '''
+    
+    message = Mail(
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to_emails=to_email,
+        subject=subject,
+        html_content=html_content
+    )
+    
+    try:
+        sg = SendGridAPIClient(settings.SENDGRID_API_KEY)
+        response = sg.send(message)
+        print(f"[SendGrid] Status: {response.status_code}")
+        if response.status_code == 202:
+            logger.info(f"OTP email sent successfully to {to_email}")
+            return True
+        else:
+            logger.error(f"SendGrid returned status code: {response.status_code}")
+            print(f"[SendGrid] Response body: {response.body}")
+            return False
+    except Exception as e:
+        logger.error(f"SendGrid Error: {str(e)}")
+        print(f"[SendGrid] Error: {str(e)}")
+        return False
+
+def register(request):
+    if request.user.is_authenticated:
+        return redirect('accounts:dashboard')
+    
+    user_form = UserRegisterForm()
+    company_form = CompanyRegisterForm()
+    
+    if request.method == 'POST':
+        user_type = request.POST.get('user_type')
+        
+        if user_type == 'user':
+            user_form = UserRegisterForm(request.POST)
+            if user_form.is_valid():
+                user_form.save()
+                return redirect('accounts:login_view')
+        elif user_type == 'company':
+            company_form = CompanyRegisterForm(request.POST)
+            if company_form.is_valid():
+                company_form.save()
+                return redirect('accounts:login_view')
+    
+    return render(request, 'accounts/register.html', {
+        'user_form': user_form,
+        'company_form': company_form,
+    })
+
+def login_view(request):
+    if request.user.is_authenticated:
+        return redirect('accounts:dashboard')
+    
+    error = None
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        user_type = request.POST.get('user_type')
+
+        user = authenticate(request, username=username, password=password)
+        if user:
+            if user.user_type == user_type:
+                login(request, user)
+                return redirect('accounts:dashboard')
+            else:
+                error = f"This account is not registered as a {user_type}."
+        else:
+            error = "Invalid username or password."
+
+    return render(request, 'accounts/login.html', {'error': error})
+
+@login_required
+def dashboard(request):
+    user = request.user
+    profile = None
+    context = {'user_type': user.user_type}
+    
+    if user.user_type == 'user':
+        # USER/STUDENT DASHBOARD
+        profile, _ = UserProfile.objects.get_or_create(user=user)
+        
+        # Import here to avoid circular imports
+        from internships.models import Application, Internship
+        
+        # Get user's applications with related internship data
+        my_applications = Application.objects.filter(applicant=user).select_related(
+            'internship', 'internship__company', 'internship__company__company_profile'
+        ).order_by('-applied_at')
+        
+        # Calculate stats
+        total_applications = my_applications.count()
+        pending_count = my_applications.filter(status='pending').count()
+        accepted_count = my_applications.filter(status='accepted').count()
+        rejected_count = my_applications.filter(status='rejected').count()
+        
+        # Get available internships count (for "Browse" button)
+        available_internships = Internship.objects.filter(status='open').count()
+        
+        context.update({
+            'profile': profile,
+            'my_applications': my_applications[:10],  # Latest 10
+            'total_applications': total_applications,
+            'pending_count': pending_count,
+            'accepted_count': accepted_count,
+            'rejected_count': rejected_count,
+            'available_internships': available_internships,
+        })
+        
+    else:
+        # COMPANY DASHBOARD
+        profile, _ = CompanyProfile.objects.get_or_create(user=user)
+        
+        from internships.models import Internship, Application
+        from django.db.models import Count
+        
+        # Get company's internships with application counts
+        my_internships = Internship.objects.filter(company=user).annotate(
+            apps_count=Count('applications')
+        ).order_by('-created_at')
+        
+        # Calculate stats
+        total_posts = my_internships.count()
+        active_posts = my_internships.filter(status='open').count()
+        closed_posts = my_internships.filter(status='closed').count()
+        
+        # Total applications across all internships
+        total_applications = Application.objects.filter(internship__company=user).count()
+        pending_applications = Application.objects.filter(
+            internship__company=user, status='pending'
+        ).count()
+        
+        # Recent applications
+        recent_applications = Application.objects.filter(
+            internship__company=user
+        ).select_related('internship', 'applicant').order_by('-applied_at')[:5]
+        
+        context.update({
+            'profile': profile,
+            'my_internships': my_internships[:10],  # Latest 10
+            'total_posts': total_posts,
+            'active_posts': active_posts,
+            'closed_posts': closed_posts,
+            'total_applications': total_applications,
+            'pending_applications': pending_applications,
+            'recent_applications': recent_applications,
+        })
+    
+    return render(request, 'accounts/dashboard.html', context)
+
+@login_required
+def logout_view(request):
+    logout(request)
+    return redirect('accounts:login_view')
+
+def forgot_password(request):
+    error = None
+    success = None
+    
+    if request.method == 'POST':
+        email = request.POST.get('email', '').strip().lower()
+        
+        if not email:
+            error = "Please enter your email address."
+        else:
+            try:
+                user = CustomUser.objects.get(email__iexact=email)
+                otp = f"{secrets.randbelow(1000000):06d}"
+                
+                PasswordResetOTP.create_otp(user, otp)
+                request.session['reset_email'] = email
+                
+                if send_otp_email(email, otp, user.user_type):
+                    return redirect('accounts:otp_confirmation')
+                else:
+                    if not settings.SENDGRID_API_KEY:
+                        error = "Email service not configured. Please contact support."
+                    else:
+                        error = "Failed to send OTP. Please try again later."
+            except CustomUser.DoesNotExist:
+                error = "No account found with this email address."
+    
+    return render(request, 'accounts/forgot_password.html', {'error': error, 'success': success})
+
+def otp_confirmation(request):
+    error = None
+    
+    if 'reset_email' not in request.session:
+        return redirect('accounts:forgot_password')
+    
+    email = request.session.get('reset_email')
+    
+    if request.method == 'POST':
+        entered_otp = request.POST.get('otp')
+        
+        try:
+            user = CustomUser.objects.get(email=email)
+            otp_record = PasswordResetOTP.objects.filter(user=user, is_used=False).latest('created_at')
+            
+            if otp_record.verify_otp(entered_otp):
+                request.session['otp_verified'] = True
+                request.session['otp_id'] = otp_record.id
+                return redirect('accounts:change_password')
+            else:
+                error = "Invalid or expired OTP. Please try again."
+        except (CustomUser.DoesNotExist, PasswordResetOTP.DoesNotExist):
+            error = "Invalid OTP. Please request a new one."
+    
+    return render(request, 'accounts/otp_confirmation.html', {'error': error, 'email': email})
+
+def change_password(request):
+    error = None
+    
+    if not request.session.get('otp_verified'):
+        return redirect('accounts:forgot_password')
+    
+    if request.method == 'POST':
+        password = request.POST.get('password')
+        confirm_password = request.POST.get('confirm_password')
+        
+        if password != confirm_password:
+            error = "Passwords do not match."
+        elif len(password) < 8:
+            error = "Password must be at least 8 characters."
+        else:
+            email = request.session.get('reset_email')
+            otp_id = request.session.get('otp_id')
+            
+            try:
+                user = CustomUser.objects.get(email=email)
+                otp_record = PasswordResetOTP.objects.get(id=otp_id)
+                
+                otp_record.is_used = True
+                otp_record.save()
+                
+                user.set_password(password)
+                user.save()
+                
+                del request.session['reset_email']
+                del request.session['otp_verified']
+                del request.session['otp_id']
+                
+                return redirect('accounts:login_view')
+            except (CustomUser.DoesNotExist, PasswordResetOTP.DoesNotExist):
+                error = "Something went wrong. Please try again."
+    
+    return render(request, 'accounts/change_password.html', {'error': error})
+
+
+@login_required
+def edit_profile(request):
+    user = request.user
+    
+    # Get or create the appropriate profile based on user type
+    if user.user_type == 'user':
+        profile, created = UserProfile.objects.get_or_create(user=user)
+        FormClass = UserProfileForm
+    else:
+        profile, created = CompanyProfile.objects.get_or_create(user=user)
+        FormClass = CompanyProfileForm
+    
+    if request.method == 'POST':
+        form = FormClass(request.POST, request.FILES, instance=profile)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Profile updated successfully!')
+            return redirect('accounts:dashboard')
+    else:
+        form = FormClass(instance=profile)
+    
+    return render(request, 'accounts/edit_profile.html', {
+        'form': form,
+        'profile': profile,
+        'user_type': user.user_type
+    })
