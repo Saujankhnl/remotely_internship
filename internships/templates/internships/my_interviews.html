@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block title %}<title>My Interviews - Remotely</title>{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <nav class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <a href="{% url 'internships:internship_list' %}" class="text-xl sm:text-2xl font-bold text-white">Remotely</a>
+            <a href="{% url 'accounts:dashboard' %}" class="text-gray-300 hover:text-white text-sm">Dashboard</a>
+        </div>
+    </nav>
+
+    <main class="max-w-4xl mx-auto px-4 py-6">
+        <h1 class="text-3xl font-bold text-white mb-6">My Interviews</h1>
+        
+        <div class="space-y-4">
+            {% for interview in interviews %}
+            <div class="bg-gray-800 border border-gray-700 rounded-xl p-5">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h3 class="text-lg font-bold text-white">{{ interview.application.job.title }}</h3>
+                        <p class="text-gray-400 text-sm">{{ interview.application.job.company.company_profile.company_name|default:interview.application.job.company.username }}</p>
+                    </div>
+                    <span class="px-3 py-1 text-sm rounded-full {% if interview.status == 'scheduled' %}bg-blue-900 text-blue-300{% elif interview.status == 'completed' %}bg-green-900 text-green-300{% elif interview.status == 'cancelled' %}bg-red-900 text-red-300{% else %}bg-yellow-900 text-yellow-300{% endif %}">
+                        {{ interview.get_status_display }}
+                    </span>
+                </div>
+                <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div>
+                        <p class="text-gray-500">Date & Time</p>
+                        <p class="text-white">{{ interview.scheduled_at|date:"M d, Y" }} at {{ interview.scheduled_at|time:"H:i" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-500">Type</p>
+                        <p class="text-white">{{ interview.get_interview_type_display }}</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-500">Duration</p>
+                        <p class="text-white">{{ interview.duration_minutes }} minutes</p>
+                    </div>
+                    {% if interview.location %}
+                    <div>
+                        <p class="text-gray-500">Location/Link</p>
+                        <p class="text-indigo-400">{{ interview.location }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+                {% if interview.notes %}
+                <div class="mt-4 p-3 bg-gray-700 rounded-lg">
+                    <p class="text-gray-400 text-sm">{{ interview.notes }}</p>
+                </div>
+                {% endif %}
+            </div>
+            {% empty %}
+            <div class="text-center py-12">
+                <svg class="w-16 h-16 text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                <h3 class="text-xl font-semibold text-gray-400 mb-2">No interviews scheduled</h3>
+                <p class="text-gray-500">Your scheduled interviews will appear here</p>
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+</div>
+{% endblock %}

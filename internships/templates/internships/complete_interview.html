@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}<title>Complete Interview - Remotely</title>{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <main class="max-w-2xl mx-auto px-4 py-8">
+        <div class="bg-gray-800 border border-gray-700 rounded-2xl p-6">
+            <h1 class="text-2xl font-bold text-white mb-2">Complete Interview</h1>
+            <p class="text-gray-400 mb-6">{{ interview.application.full_name }} - {{ interview.application.job.title }}</p>
+            
+            <form method="post" class="space-y-4">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-gray-300 mb-2">Feedback / Notes</label>
+                    <textarea name="notes" rows="5" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-xl text-white">{{ interview.notes }}</textarea>
+                </div>
+                <div class="flex gap-3 pt-4">
+                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-semibold">Mark Completed</button>
+                    <a href="{% url 'internships:job_application_detail' interview.application.pk %}" class="bg-gray-700 hover:bg-gray-600 text-white px-6 py-3 rounded-xl">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </main>
+</div>
+{% endblock %}

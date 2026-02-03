@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block title %}<title>Recommended Jobs - Remotely</title>{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <nav class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <a href="{% url 'internships:internship_list' %}" class="text-xl sm:text-2xl font-bold text-white">Remotely</a>
+            <div class="flex items-center gap-4">
+                <a href="{% url 'internships:job_list' %}" class="text-gray-400 hover:text-white text-sm">Jobs</a>
+                <a href="{% url 'accounts:dashboard' %}" class="text-gray-300 hover:text-white text-sm">Dashboard</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 py-6">
+        <h1 class="text-3xl font-bold text-white mb-2">Recommended For You</h1>
+        <p class="text-gray-400 mb-6">Jobs matching your skills: {% for skill in user_skills %}<span class="bg-indigo-600 text-white px-2 py-1 rounded text-xs mr-1">{{ skill }}</span>{% endfor %}</p>
+        
+        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {% for rec in recommendations %}
+            <a href="{% url 'internships:job_detail' rec.job.pk %}" class="bg-gray-800 border border-gray-700 rounded-2xl p-5 hover:border-indigo-500 transition block">
+                <div class="flex justify-between items-start mb-3">
+                    <h3 class="text-lg font-bold text-white">{{ rec.job.title }}</h3>
+                    <span class="px-3 py-1 text-sm rounded-full {% if rec.match_percentage >= 70 %}bg-green-500{% elif rec.match_percentage >= 40 %}bg-yellow-500{% else %}bg-gray-600{% endif %} text-white font-semibold">
+                        {{ rec.match_percentage }}% Match
+                    </span>
+                </div>
+                <p class="text-gray-400 text-sm mb-2">{{ rec.job.company.company_profile.company_name|default:rec.job.company.username }}</p>
+                <p class="text-gray-500 text-sm mb-3">{{ rec.job.location }}</p>
+                <div class="flex flex-wrap gap-1 mb-3">
+                    {% for skill in rec.matching_skills %}
+                    <span class="px-2 py-1 bg-green-900 text-green-300 text-xs rounded">{{ skill }}</span>
+                    {% endfor %}
+                </div>
+                <p class="text-green-400 text-sm font-semibold">{{ rec.job.get_salary_display }}</p>
+            </a>
+            {% empty %}
+            <div class="col-span-full text-center py-12">
+                <svg class="w-16 h-16 text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                <h3 class="text-xl font-semibold text-gray-400 mb-2">No recommendations yet</h3>
+                <p class="text-gray-500 mb-4">Add skills to your profile to get personalized job recommendations</p>
+                <a href="{% url 'accounts:edit_profile' %}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-semibold">Update Profile</a>
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+</div>
+{% endblock %}

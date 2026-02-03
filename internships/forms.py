@@ -1,7 +1,7 @@
 from django import forms
 from django.core.validators import FileExtensionValidator
 from django.core.exceptions import ValidationError
-from .models import Internship, Application
+from .models import Internship, Application, Job, JobApplication, Interview
 
 DARK_INPUT_CLASS = 'w-full px-4 py-3 text-base bg-gray-700 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500'
 
@@ -19,6 +19,144 @@ def validate_cv_file(file):
     ext = file.name.split('.')[-1].lower()
     if ext not in ALLOWED_CV_EXTENSIONS:
         raise ValidationError(f'Only PDF, DOC, DOCX files allowed. You uploaded a .{ext} file.')
+
+
+# ==================== JOB FORMS ====================
+
+class JobForm(forms.ModelForm):
+    """Form for creating/editing jobs"""
+    
+    class Meta:
+        model = Job
+        fields = [
+            'title', 'description', 'job_type', 'required_skills',
+            'qualifications', 'experience_level', 'salary_min', 'salary_max',
+            'salary_currency', 'location', 'is_remote', 'email', 
+            'benefits', 'deadline'
+        ]
+        widgets = {
+            'title': forms.TextInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'e.g., Senior Software Engineer'
+            }),
+            'description': forms.Textarea(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'Describe the job role, responsibilities...',
+                'rows': 5
+            }),
+            'job_type': forms.Select(attrs={
+                'class': DARK_INPUT_CLASS,
+            }),
+            'required_skills': forms.TextInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'Python, Django, PostgreSQL, AWS'
+            }),
+            'qualifications': forms.Textarea(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'Required qualifications...',
+                'rows': 3
+            }),
+            'experience_level': forms.Select(attrs={
+                'class': DARK_INPUT_CLASS,
+            }),
+            'salary_min': forms.NumberInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'e.g., 50000'
+            }),
+            'salary_max': forms.NumberInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'e.g., 80000'
+            }),
+            'salary_currency': forms.TextInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'USD'
+            }),
+            'location': forms.TextInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'e.g., New York, USA'
+            }),
+            'is_remote': forms.CheckboxInput(attrs={
+                'class': 'w-5 h-5 rounded'
+            }),
+            'email': forms.EmailInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'hr@company.com'
+            }),
+            'benefits': forms.Textarea(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'Health insurance, 401k, Remote work...',
+                'rows': 3
+            }),
+            'deadline': forms.DateInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'type': 'date'
+            }),
+        }
+
+
+class JobApplicationForm(forms.ModelForm):
+    """Form for applying to jobs"""
+    
+    class Meta:
+        model = JobApplication
+        fields = [
+            'full_name', 'email', 'phone', 'cover_letter', 
+            'cv', 'expected_salary', 'years_of_experience',
+            'notice_period', 'linkedin', 'portfolio'
+        ]
+        widgets = {
+            'full_name': forms.TextInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'Your full name'
+            }),
+            'email': forms.EmailInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'your.email@example.com'
+            }),
+            'phone': forms.TextInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': '+1 234 567 8900'
+            }),
+            'cover_letter': forms.Textarea(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'Why are you the right fit for this role?',
+                'rows': 5
+            }),
+            'cv': forms.FileInput(attrs={
+                'class': 'hidden',
+                'accept': '.pdf,.doc,.docx'
+            }),
+            'expected_salary': forms.NumberInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'Expected annual salary'
+            }),
+            'years_of_experience': forms.NumberInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'Years of experience'
+            }),
+            'notice_period': forms.TextInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'e.g., 2 weeks, 1 month'
+            }),
+            'linkedin': forms.URLInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'https://linkedin.com/in/yourprofile'
+            }),
+            'portfolio': forms.URLInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'https://yourportfolio.com'
+            }),
+        }
+    
+    def clean_cv(self):
+        """Validate CV file"""
+        cv = self.cleaned_data.get('cv')
+        if cv:
+            validate_cv_file(cv)
+        return cv
+
+
+# ==================== INTERNSHIP FORMS ====================
 
 
 class InternshipForm(forms.ModelForm):
@@ -134,3 +272,35 @@ class ApplicationForm(forms.ModelForm):
         if cv:
             validate_cv_file(cv)
         return cv
+
+
+class InterviewForm(forms.ModelForm):
+    """Form for scheduling interviews"""
+    
+    class Meta:
+        model = Interview
+        fields = ['interview_type', 'scheduled_at', 'duration_minutes', 'location', 'notes']
+        widgets = {
+            'interview_type': forms.Select(attrs={
+                'class': DARK_INPUT_CLASS,
+            }),
+            'scheduled_at': forms.DateTimeInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'type': 'datetime-local'
+            }),
+            'duration_minutes': forms.NumberInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': '60',
+                'min': '15',
+                'max': '480'
+            }),
+            'location': forms.TextInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'Meeting link or address'
+            }),
+            'notes': forms.Textarea(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'Additional notes for the candidate...',
+                'rows': 3
+            }),
+        }

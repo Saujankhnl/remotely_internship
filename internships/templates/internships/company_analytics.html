@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block title %}<title>Company Analytics - Remotely</title>{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <nav class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <a href="{% url 'internships:internship_list' %}" class="text-xl sm:text-2xl font-bold text-white">Remotely</a>
+            <div class="flex items-center gap-4">
+                <a href="{% url 'internships:my_jobs' %}" class="text-gray-400 hover:text-white text-sm">My Jobs</a>
+                <a href="{% url 'accounts:dashboard' %}" class="text-gray-300 hover:text-white text-sm">Dashboard</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 py-6">
+        <h1 class="text-3xl font-bold text-white mb-6">Company Analytics</h1>
+        
+        <!-- Overview Stats -->
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+            <div class="bg-gray-800 border border-gray-700 rounded-xl p-5 text-center">
+                <p class="text-3xl font-bold text-white">{{ total_jobs }}</p>
+                <p class="text-gray-400 text-sm">Total Jobs</p>
+            </div>
+            <div class="bg-gray-800 border border-gray-700 rounded-xl p-5 text-center">
+                <p class="text-3xl font-bold text-green-400">{{ active_jobs }}</p>
+                <p class="text-gray-400 text-sm">Active Jobs</p>
+            </div>
+            <div class="bg-gray-800 border border-gray-700 rounded-xl p-5 text-center">
+                <p class="text-3xl font-bold text-indigo-400">{{ total_views }}</p>
+                <p class="text-gray-400 text-sm">Total Views</p>
+            </div>
+            <div class="bg-gray-800 border border-gray-700 rounded-xl p-5 text-center">
+                <p class="text-3xl font-bold text-yellow-400">{{ total_applications }}</p>
+                <p class="text-gray-400 text-sm">Total Applications</p>
+            </div>
+            <div class="bg-gray-800 border border-gray-700 rounded-xl p-5 text-center">
+                <p class="text-3xl font-bold text-purple-400">{{ recent_applications }}</p>
+                <p class="text-gray-400 text-sm">New (7 days)</p>
+            </div>
+        </div>
+        
+        <!-- Top Performing Jobs -->
+        <div class="bg-gray-800 border border-gray-700 rounded-xl p-6">
+            <h2 class="text-xl font-bold text-white mb-4">Top Performing Jobs</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="text-gray-400 text-sm border-b border-gray-700">
+                            <th class="pb-3">Job Title</th>
+                            <th class="pb-3">Views</th>
+                            <th class="pb-3">Applications</th>
+                            <th class="pb-3">Status</th>
+                            <th class="pb-3">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for job in top_jobs %}
+                        <tr class="border-b border-gray-700">
+                            <td class="py-3 text-white">{{ job.title }}</td>
+                            <td class="py-3 text-indigo-400">{{ job.view_count }}</td>
+                            <td class="py-3 text-yellow-400">{{ job.app_count }}</td>
+                            <td class="py-3">
+                                <span class="px-2 py-1 text-xs rounded {% if job.status == 'open' %}bg-green-900 text-green-300{% else %}bg-red-900 text-red-300{% endif %}">{{ job.get_status_display }}</span>
+                            </td>
+                            <td class="py-3">
+                                <a href="{% url 'internships:job_analytics' job.pk %}" class="text-indigo-400 hover:text-indigo-300 text-sm">Details</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="py-6 text-center text-gray-500">No jobs posted yet</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% block title %}<title>{{ job.title }} Analytics - Remotely</title>{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <nav class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <a href="{% url 'internships:internship_list' %}" class="text-xl sm:text-2xl font-bold text-white">Remotely</a>
+            <div class="flex items-center gap-4">
+                <a href="{% url 'internships:my_jobs' %}" class="text-gray-400 hover:text-white text-sm">My Jobs</a>
+                <a href="{% url 'accounts:dashboard' %}" class="text-gray-300 hover:text-white text-sm">Dashboard</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 py-6">
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-3xl font-bold text-white">{{ job.title }}</h1>
+                <p class="text-gray-400">Analytics & Performance</p>
+            </div>
+            <a href="{% url 'internships:view_job_applications' job.pk %}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg">View Applications</a>
+        </div>
+        
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-gray-800 border border-gray-700 rounded-xl p-5 text-center">
+                <p class="text-3xl font-bold text-indigo-400">{{ total_views }}</p>
+                <p class="text-gray-400 text-sm">Total Views</p>
+            </div>
+            <div class="bg-gray-800 border border-gray-700 rounded-xl p-5 text-center">
+                <p class="text-3xl font-bold text-green-400">{{ unique_viewers }}</p>
+                <p class="text-gray-400 text-sm">Unique Viewers</p>
+            </div>
+            <div class="bg-gray-800 border border-gray-700 rounded-xl p-5 text-center">
+                <p class="text-3xl font-bold text-yellow-400">{{ total_applications }}</p>
+                <p class="text-gray-400 text-sm">Applications</p>
+            </div>
+            <div class="bg-gray-800 border border-gray-700 rounded-xl p-5 text-center">
+                <p class="text-3xl font-bold text-purple-400">{% widthratio total_applications total_views 100 %}%</p>
+                <p class="text-gray-400 text-sm">Conversion Rate</p>
+            </div>
+        </div>
+        
+        <!-- Application Status Breakdown -->
+        <div class="bg-gray-800 border border-gray-700 rounded-xl p-6 mb-8">
+            <h2 class="text-xl font-bold text-white mb-4">Application Status</h2>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <div class="text-center">
+                    <p class="text-2xl font-bold text-gray-300">{{ app_by_status.pending|default:0 }}</p>
+                    <p class="text-gray-500 text-sm">Pending</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-2xl font-bold text-blue-400">{{ app_by_status.reviewed|default:0 }}</p>
+                    <p class="text-gray-500 text-sm">Reviewed</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-2xl font-bold text-yellow-400">{{ app_by_status.shortlisted|default:0 }}</p>
+                    <p class="text-gray-500 text-sm">Shortlisted</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-2xl font-bold text-purple-400">{{ app_by_status.interview|default:0 }}</p>
+                    <p class="text-gray-500 text-sm">Interview</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-2xl font-bold text-green-400">{{ app_by_status.accepted|default:0 }}</p>
+                    <p class="text-gray-500 text-sm">Accepted</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-2xl font-bold text-red-400">{{ app_by_status.rejected|default:0 }}</p>
+                    <p class="text-gray-500 text-sm">Rejected</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Daily Views Chart placeholder -->
+        <div class="bg-gray-800 border border-gray-700 rounded-xl p-6">
+            <h2 class="text-xl font-bold text-white mb-4">Views (Last 30 Days)</h2>
+            <div class="h-48 flex items-end gap-1">
+                {% for day in daily_views %}
+                <div class="flex-1 bg-indigo-500 rounded-t" style="height: {{ day.count|default:0 }}0%;"></div>
+                {% empty %}
+                <p class="text-gray-500 w-full text-center">No view data available yet</p>
+                {% endfor %}
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

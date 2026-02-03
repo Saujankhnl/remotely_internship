@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}<title>Reschedule Interview - Remotely</title>{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <nav class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <a href="{% url 'internships:internship_list' %}" class="text-xl sm:text-2xl font-bold text-white">Remotely</a>
+            <a href="{% url 'accounts:dashboard' %}" class="text-gray-300 hover:text-white text-sm">Dashboard</a>
+        </div>
+    </nav>
+
+    <main class="max-w-2xl mx-auto px-4 py-8">
+        <div class="bg-gray-800 border border-gray-700 rounded-2xl p-6">
+            <h1 class="text-2xl font-bold text-white mb-2">Reschedule Interview</h1>
+            <p class="text-gray-400 mb-6">{{ interview.application.full_name }} - {{ interview.application.job.title }}</p>
+            
+            <form method="post" class="space-y-4">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-gray-300 mb-2">Interview Type</label>
+                    {{ form.interview_type }}
+                </div>
+                <div>
+                    <label class="block text-gray-300 mb-2">Date & Time</label>
+                    {{ form.scheduled_at }}
+                </div>
+                <div>
+                    <label class="block text-gray-300 mb-2">Duration (minutes)</label>
+                    {{ form.duration_minutes }}
+                </div>
+                <div>
+                    <label class="block text-gray-300 mb-2">Location / Meeting Link</label>
+                    {{ form.location }}
+                </div>
+                <div>
+                    <label class="block text-gray-300 mb-2">Notes</label>
+                    {{ form.notes }}
+                </div>
+                <div class="flex gap-3 pt-4">
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-semibold">Update Interview</button>
+                    <a href="{% url 'internships:job_application_detail' interview.application.pk %}" class="bg-gray-700 hover:bg-gray-600 text-white px-6 py-3 rounded-xl">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </main>
+</div>
+{% endblock %}
