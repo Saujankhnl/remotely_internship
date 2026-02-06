@@ -139,37 +139,56 @@ def dashboard(request):
         profile, _ = UserProfile.objects.get_or_create(user=user)
         
         # Import here to avoid circular imports
-        from internships.models import Application, Internship
+        from internships.models import Application, Internship, Job, JobApplication, JobBookmark, Interview
         
-        # Get user's applications with related internship data
+        # Get user's internship applications
         my_applications = Application.objects.filter(applicant=user).select_related(
             'internship', 'internship__company', 'internship__company__company_profile'
         ).order_by('-applied_at')
         
-        # Calculate stats
-        total_applications = my_applications.count()
-        pending_count = my_applications.filter(status='pending').count()
-        accepted_count = my_applications.filter(status='accepted').count()
-        rejected_count = my_applications.filter(status='rejected').count()
+        # Get user's job applications
+        my_job_applications = JobApplication.objects.filter(applicant=user).select_related(
+            'job', 'job__company', 'job__company__company_profile'
+        ).order_by('-applied_at')
         
-        # Get available internships count (for "Browse" button)
+        # Calculate stats
+        total_applications = my_applications.count() + my_job_applications.count()
+        pending_count = my_applications.filter(status='pending').count() + my_job_applications.filter(status='pending').count()
+        accepted_count = my_applications.filter(status='accepted').count() + my_job_applications.filter(status='accepted').count()
+        interview_count = my_job_applications.filter(status='interview').count()
+        
+        # Get available counts
         available_internships = Internship.objects.filter(status='open').count()
+        available_jobs = Job.objects.filter(status='open').count()
+        
+        # Get saved jobs count
+        saved_jobs_count = JobBookmark.objects.filter(user=user).count()
+        
+        # Get upcoming interviews
+        upcoming_interviews = Interview.objects.filter(
+            application__applicant=user,
+            status='scheduled'
+        ).select_related('application', 'application__job').order_by('scheduled_at')[:3]
         
         context.update({
             'profile': profile,
-            'my_applications': my_applications[:10],  # Latest 10
+            'my_applications': my_applications[:5],
+            'my_job_applications': my_job_applications[:5],
             'total_applications': total_applications,
             'pending_count': pending_count,
             'accepted_count': accepted_count,
-            'rejected_count': rejected_count,
+            'interview_count': interview_count,
             'available_internships': available_internships,
+            'available_jobs': available_jobs,
+            'saved_jobs_count': saved_jobs_count,
+            'upcoming_interviews': upcoming_interviews,
         })
         
     else:
         # COMPANY DASHBOARD
         profile, _ = CompanyProfile.objects.get_or_create(user=user)
         
-        from internships.models import Internship, Application
+        from internships.models import Internship, Application, Job, JobApplication, JobView
         from django.db.models import Count
         
         # Get company's internships with application counts
@@ -177,31 +196,54 @@ def dashboard(request):
             apps_count=Count('applications')
         ).order_by('-created_at')
         
-        # Calculate stats
-        total_posts = my_internships.count()
-        active_posts = my_internships.filter(status='open').count()
-        closed_posts = my_internships.filter(status='closed').count()
+        # Get company's jobs with application counts
+        my_jobs = Job.objects.filter(company=user).annotate(
+            apps_count=Count('job_applications')
+        ).order_by('-created_at')
         
-        # Total applications across all internships
-        total_applications = Application.objects.filter(internship__company=user).count()
+        # Calculate stats
+        total_internship_posts = my_internships.count()
+        total_job_posts = my_jobs.count()
+        total_posts = total_internship_posts + total_job_posts
+        active_posts = my_internships.filter(status='open').count() + my_jobs.filter(status='open').count()
+        
+        # Total applications across all postings
+        internship_applications = Application.objects.filter(internship__company=user).count()
+        job_applications = JobApplication.objects.filter(job__company=user).count()
+        total_applications = internship_applications + job_applications
+        
         pending_applications = Application.objects.filter(
             internship__company=user, status='pending'
+        ).count() + JobApplication.objects.filter(
+            job__company=user, status='pending'
         ).count()
         
-        # Recent applications
-        recent_applications = Application.objects.filter(
+        # Total views
+        total_views = JobView.objects.filter(job__company=user).count()
+        
+        # Recent internship applications
+        recent_internship_apps = Application.objects.filter(
             internship__company=user
-        ).select_related('internship', 'applicant').order_by('-applied_at')[:5]
+        ).select_related('internship', 'applicant').order_by('-applied_at')[:3]
+        
+        # Recent job applications
+        recent_job_apps = JobApplication.objects.filter(
+            job__company=user
+        ).select_related('job', 'applicant').order_by('-applied_at')[:3]
         
         context.update({
             'profile': profile,
-            'my_internships': my_internships[:10],  # Latest 10
+            'my_internships': my_internships[:5],
+            'my_jobs': my_jobs[:5],
             'total_posts': total_posts,
+            'total_internship_posts': total_internship_posts,
+            'total_job_posts': total_job_posts,
             'active_posts': active_posts,
-            'closed_posts': closed_posts,
             'total_applications': total_applications,
             'pending_applications': pending_applications,
-            'recent_applications': recent_applications,
+            'total_views': total_views,
+            'recent_internship_apps': recent_internship_apps,
+            'recent_job_apps': recent_job_apps,
         })
     
     return render(request, 'accounts/dashboard.html', context)
