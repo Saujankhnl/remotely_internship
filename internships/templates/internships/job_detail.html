@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}<title>{{ job.title }} - Remotely</title>{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <nav class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <a href="{% url 'internships:job_list' %}" class="flex items-center gap-2 text-gray-300 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+                Back to Jobs
+            </a>
+            <div class="flex items-center gap-4">
+                {% if user.is_authenticated %}
+                <button onclick="toggleBookmark()" id="bookmark-btn" class="{% if is_bookmarked %}text-yellow-400{% else %}text-gray-400{% endif %} hover:text-yellow-300">
+                    <svg class="w-6 h-6" fill="{% if is_bookmarked %}currentColor{% else %}none{% endif %}" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
+                    </svg>
+                </button>
+                <a href="{% url 'accounts:dashboard' %}" class="text-gray-300 hover:text-white text-sm">Dashboard</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-4xl mx-auto px-4 py-6">
+        <div class="bg-gray-800 border border-gray-700 rounded-2xl p-6 mb-6">
+            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-4">
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-bold text-white mb-2">{{ job.title }}</h1>
+                    <p class="text-gray-400 text-lg">{{ job.company.company_profile.company_name|default:job.company.username }}</p>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <span class="px-4 py-2 text-sm rounded-full bg-indigo-500 text-white font-semibold text-center">{{ job.get_job_type_display }}</span>
+                    {% if job.is_remote %}<span class="px-4 py-2 text-sm rounded-full bg-green-500 text-white font-semibold text-center">Remote</span>{% endif %}
+                </div>
+            </div>
+            
+            <div class="flex flex-wrap gap-4 text-gray-400 text-sm">
+                <div class="flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
+                    {{ job.location }}
+                </div>
+                <div class="flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                    {{ job.get_experience_level_display }}
+                </div>
+                <div class="flex items-center gap-2 text-green-400">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    {{ job.get_salary_display }}
+                </div>
+            </div>
+        </div>
+
+        <div class="grid gap-6 lg:grid-cols-3">
+            <div class="lg:col-span-2 space-y-6">
+                <div class="bg-gray-800 border border-gray-700 rounded-2xl p-6">
+                    <h2 class="text-xl font-bold text-white mb-4">Description</h2>
+                    <div class="text-gray-300 whitespace-pre-line">{{ job.description }}</div>
+                </div>
+                <div class="bg-gray-800 border border-gray-700 rounded-2xl p-6">
+                    <h2 class="text-xl font-bold text-white mb-4">Qualifications</h2>
+                    <div class="text-gray-300 whitespace-pre-line">{{ job.qualifications }}</div>
+                </div>
+                {% if job.benefits %}
+                <div class="bg-gray-800 border border-gray-700 rounded-2xl p-6">
+                    <h2 class="text-xl font-bold text-white mb-4">Benefits</h2>
+                    <div class="text-gray-300 whitespace-pre-line">{{ job.benefits }}</div>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="space-y-6">
+                <div class="bg-gray-800 border border-gray-700 rounded-2xl p-6">
+                    {% if user.is_authenticated and user.user_type == 'user' %}
+                        {% if has_applied %}
+                            <div class="text-center">
+                                <span class="inline-block bg-green-500 bg-opacity-20 text-green-400 px-4 py-3 rounded-xl w-full font-semibold">✓ Already Applied</span>
+                                <a href="{% url 'internships:my_job_applications' %}" class="block mt-3 text-indigo-400 hover:text-indigo-300 text-sm">View My Applications</a>
+                            </div>
+                        {% elif job.status == 'open' %}
+                            <a href="{% url 'internships:apply_job' job.pk %}" class="block w-full bg-indigo-600 hover:bg-indigo-700 text-white text-center font-bold py-4 rounded-xl transition">Apply Now</a>
+                        {% else %}
+                            <span class="block bg-gray-600 text-gray-400 text-center font-semibold py-4 rounded-xl">Applications Closed</span>
+                        {% endif %}
+                    {% elif user.is_authenticated and user.user_type == 'company' %}
+                        <p class="text-gray-400 text-center text-sm">Companies cannot apply to jobs</p>
+                    {% else %}
+                        <a href="{% url 'accounts:login_view' %}" class="block w-full bg-indigo-600 hover:bg-indigo-700 text-white text-center font-bold py-4 rounded-xl transition">Login to Apply</a>
+                    {% endif %}
+                </div>
+
+                <div class="bg-gray-800 border border-gray-700 rounded-2xl p-6">
+                    <h3 class="text-lg font-bold text-white mb-4">Required Skills</h3>
+                    <div class="flex flex-wrap gap-2">
+                        {% for skill in job.get_skills_list %}<span class="px-3 py-1 bg-indigo-500 bg-opacity-20 text-indigo-400 text-sm rounded-lg">{{ skill }}</span>{% endfor %}
+                    </div>
+                </div>
+
+                <div class="bg-gray-800 border border-gray-700 rounded-2xl p-6">
+                    <h3 class="text-lg font-bold text-white mb-4">Contact</h3>
+                    <a href="mailto:{{ job.email }}" class="flex items-center gap-2 text-indigo-400 hover:text-indigo-300">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                        {{ job.email }}
+                    </a>
+                </div>
+
+                {% if job.deadline %}
+                <div class="bg-gray-800 border border-gray-700 rounded-2xl p-6">
+                    <h3 class="text-lg font-bold text-white mb-2">Application Deadline</h3>
+                    <p class="text-red-400">{{ job.deadline|date:"F d, Y" }}</p>
+                </div>
+                {% endif %}
+
+                <div class="text-center text-gray-500 text-sm">Posted {{ job.created_at|timesince }} ago</div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+function toggleBookmark() {
+    fetch("{% url 'internships:toggle_job_bookmark' job.pk %}", {
+        method: 'POST',
+        headers: {'X-CSRFToken': '{{ csrf_token }}'}
+    }).then(r => r.json()).then(data => {
+        const btn = document.getElementById('bookmark-btn');
+        const svg = btn.querySelector('svg');
+        if (data.bookmarked) {
+            btn.classList.remove('text-gray-400');
+            btn.classList.add('text-yellow-400');
+            svg.setAttribute('fill', 'currentColor');
+        } else {
+            btn.classList.remove('text-yellow-400');
+            btn.classList.add('text-gray-400');
+            svg.setAttribute('fill', 'none');
+        }
+    });
+}
+</script>
+{% endblock %}

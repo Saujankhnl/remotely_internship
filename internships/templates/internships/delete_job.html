@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}<title>Delete Job - Remotely</title>{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
+    <div class="bg-gray-800 border border-gray-700 rounded-2xl p-8 max-w-md text-center">
+        <svg class="w-16 h-16 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+        <h1 class="text-2xl font-bold text-white mb-2">Delete Job?</h1>
+        <p class="text-gray-400 mb-6">Are you sure you want to delete "{{ job.title }}"? This action cannot be undone.</p>
+        <form method="post" class="flex gap-3 justify-center">
+            {% csrf_token %}
+            <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-semibold">Delete</button>
+            <a href="{% url 'internships:my_jobs' %}" class="bg-gray-700 hover:bg-gray-600 text-white px-6 py-3 rounded-xl">Cancel</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

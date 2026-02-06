@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% block title %}<title>{{ application.full_name }} - Application - Remotely</title>{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <nav class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <a href="{% url 'internships:view_job_applications' application.job.pk %}" class="flex items-center gap-2 text-gray-300 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                Back to Applications
+            </a>
+            <a href="{% url 'accounts:dashboard' %}" class="text-gray-300 hover:text-white text-sm">Dashboard</a>
+        </div>
+    </nav>
+
+    <main class="max-w-4xl mx-auto px-4 py-6">
+        <div class="bg-gray-800 border border-gray-700 rounded-2xl p-6 mb-6">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h1 class="text-2xl font-bold text-white mb-1">{{ application.full_name }}</h1>
+                    <p class="text-gray-400">Applied for: <span class="text-indigo-400">{{ application.job.title }}</span></p>
+                </div>
+                <span class="px-4 py-2 rounded-full text-sm font-semibold
+                    {% if application.status == 'pending' %}bg-gray-600 text-gray-300
+                    {% elif application.status == 'reviewed' %}bg-blue-900 text-blue-300
+                    {% elif application.status == 'shortlisted' %}bg-yellow-900 text-yellow-300
+                    {% elif application.status == 'interview' %}bg-purple-900 text-purple-300
+                    {% elif application.status == 'accepted' %}bg-green-900 text-green-300
+                    {% elif application.status == 'rejected' %}bg-red-900 text-red-300{% endif %}">
+                    {{ application.get_status_display }}
+                </span>
+            </div>
+            <p class="text-gray-500 text-sm">Applied {{ application.applied_at|timesince }} ago</p>
+        </div>
+
+        <div class="grid gap-6 lg:grid-cols-3">
+            <div class="lg:col-span-2 space-y-6">
+                <div class="bg-gray-800 border border-gray-700 rounded-2xl p-6">
+                    <h2 class="text-xl font-bold text-white mb-4">Contact Information</h2>
+                    <div class="space-y-3">
+                        <p class="text-gray-300"><span class="text-gray-500">Email:</span> <a href="mailto:{{ application.email }}" class="text-indigo-400">{{ application.email }}</a></p>
+                        <p class="text-gray-300"><span class="text-gray-500">Phone:</span> {{ application.phone }}</p>
+                        {% if application.linkedin %}<p class="text-gray-300"><span class="text-gray-500">LinkedIn:</span> <a href="{{ application.linkedin }}" target="_blank" class="text-indigo-400">{{ application.linkedin }}</a></p>{% endif %}
+                        {% if application.portfolio %}<p class="text-gray-300"><span class="text-gray-500">Portfolio:</span> <a href="{{ application.portfolio }}" target="_blank" class="text-indigo-400">{{ application.portfolio }}</a></p>{% endif %}
+                    </div>
+                </div>
+
+                {% if application.cover_letter %}
+                <div class="bg-gray-800 border border-gray-700 rounded-2xl p-6">
+                    <h2 class="text-xl font-bold text-white mb-4">Cover Letter</h2>
+                    <div class="text-gray-300 whitespace-pre-line">{{ application.cover_letter }}</div>
+                </div>
+                {% endif %}
+
+                <div class="bg-gray-800 border border-gray-700 rounded-2xl p-6">
+                    <h2 class="text-xl font-bold text-white mb-4">Experience & Expectations</h2>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><p class="text-gray-500 text-sm">Years of Experience</p><p class="text-white text-lg">{{ application.years_of_experience }} years</p></div>
+                        {% if application.expected_salary %}<div><p class="text-gray-500 text-sm">Expected Salary</p><p class="text-green-400 text-lg">${{ application.expected_salary|floatformat:0 }}</p></div>{% endif %}
+                        {% if application.notice_period %}<div><p class="text-gray-500 text-sm">Notice Period</p><p class="text-white text-lg">{{ application.notice_period }}</p></div>{% endif %}
+                    </div>
+                </div>
+
+                {% if application.interviews.exists %}
+                <div class="bg-gray-800 border border-gray-700 rounded-2xl p-6">
+                    <h2 class="text-xl font-bold text-white mb-4">Scheduled Interviews</h2>
+                    {% for interview in application.interviews.all %}
+                    <div class="border border-gray-700 rounded-xl p-4 mb-3 {% if interview.status == 'cancelled' %}opacity-50{% endif %}">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-white font-semibold">{{ interview.get_interview_type_display }}</p>
+                                <p class="text-gray-400 text-sm">{{ interview.scheduled_at|date:"M d, Y" }} at {{ interview.scheduled_at|time:"H:i" }}</p>
+                                <p class="text-gray-500 text-sm">Duration: {{ interview.duration_minutes }} min</p>
+                                {% if interview.location %}<p class="text-indigo-400 text-sm">{{ interview.location }}</p>{% endif %}
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <span class="px-2 py-1 text-xs rounded {% if interview.status == 'scheduled' %}bg-blue-900 text-blue-300{% elif interview.status == 'completed' %}bg-green-900 text-green-300{% elif interview.status == 'cancelled' %}bg-red-900 text-red-300{% else %}bg-yellow-900 text-yellow-300{% endif %}">{{ interview.get_status_display }}</span>
+                                {% if interview.status == 'scheduled' %}
+                                <a href="{% url 'internships:update_interview' interview.pk %}" class="text-indigo-400 text-xs hover:underline">Reschedule</a>
+                                <a href="{% url 'internships:complete_interview' interview.pk %}" class="text-green-400 text-xs hover:underline">Complete</a>
+                                <a href="{% url 'internships:cancel_interview' interview.pk %}" class="text-red-400 text-xs hover:underline">Cancel</a>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if interview.notes %}<p class="text-gray-400 text-sm mt-2 border-t border-gray-700 pt-2">{{ interview.notes }}</p>{% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="space-y-6">
+                <div class="bg-gray-800 border border-gray-700 rounded-2xl p-6">
+                    <h3 class="text-lg font-bold text-white mb-4">Resume / CV</h3>
+                    <a href="{{ application.cv.url }}" target="_blank" class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 rounded-xl justify-center">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        Download CV
+                    </a>
+                </div>
+
+                <div class="bg-gray-800 border border-gray-700 rounded-2xl p-6">
+                    <h3 class="text-lg font-bold text-white mb-4">Update Status</h3>
+                    <form method="post" action="{% url 'internships:update_job_application_status' application.pk %}">
+                        {% csrf_token %}
+                        <select name="status" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-xl text-white mb-3">
+                            <option value="pending" {% if application.status == 'pending' %}selected{% endif %}>Pending</option>
+                            <option value="reviewed" {% if application.status == 'reviewed' %}selected{% endif %}>Reviewed</option>
+                            <option value="shortlisted" {% if application.status == 'shortlisted' %}selected{% endif %}>Shortlisted</option>
+                            <option value="interview" {% if application.status == 'interview' %}selected{% endif %}>Interview</option>
+                            <option value="accepted" {% if application.status == 'accepted' %}selected{% endif %}>Accepted</option>
+                            <option value="rejected" {% if application.status == 'rejected' %}selected{% endif %}>Rejected</option>
+                        </select>
+                        <button type="submit" class="w-full bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-xl">Update Status</button>
+                    </form>
+                </div>
+
+                <div class="bg-gray-800 border border-gray-700 rounded-2xl p-6">
+                    <h3 class="text-lg font-bold text-white mb-4">Schedule Interview</h3>
+                    <a href="{% url 'internships:schedule_interview' application.pk %}" class="block w-full bg-purple-600 hover:bg-purple-700 text-white text-center py-3 rounded-xl">
+                        Schedule Interview
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

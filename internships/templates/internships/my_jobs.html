@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}<title>My Jobs - Remotely</title>{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <nav class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <a href="{% url 'internships:internship_list' %}" class="text-xl font-bold text-white">Remotely</a>
+            <div class="flex items-center gap-4">
+                <a href="{% url 'internships:company_analytics' %}" class="text-gray-400 hover:text-white text-sm">Analytics</a>
+                <a href="{% url 'accounts:dashboard' %}" class="text-gray-300 hover:text-white text-sm">Dashboard</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 py-6">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-white">My Jobs</h1>
+            <a href="{% url 'internships:create_job' %}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-semibold">Post New Job</a>
+        </div>
+
+        <div class="grid gap-4">
+            {% for job in jobs %}
+            <div class="bg-gray-800 border border-gray-700 rounded-xl p-5">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h3 class="text-lg font-bold text-white mb-1">{{ job.title }}</h3>
+                        <p class="text-gray-400 text-sm mb-2">{{ job.location }} • {{ job.get_job_type_display }}</p>
+                        <div class="flex gap-4 text-sm">
+                            <span class="text-indigo-400">{{ job.apps_count }} application{{ job.apps_count|pluralize }}</span>
+                            <span class="text-gray-500">Posted {{ job.created_at|timesince }} ago</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="px-3 py-1 rounded-full text-xs {% if job.status == 'open' %}bg-green-900 text-green-300{% else %}bg-red-900 text-red-300{% endif %}">{{ job.get_status_display }}</span>
+                        <div class="flex gap-2">
+                            <a href="{% url 'internships:view_job_applications' job.pk %}" class="text-indigo-400 hover:text-indigo-300 text-sm">Applications</a>
+                            <a href="{% url 'internships:job_analytics' job.pk %}" class="text-green-400 hover:text-green-300 text-sm">Analytics</a>
+                            <a href="{% url 'internships:edit_job' job.pk %}" class="text-yellow-400 hover:text-yellow-300 text-sm">Edit</a>
+                            <form method="post" action="{% url 'internships:toggle_job_status' job.pk %}" class="inline">{% csrf_token %}<button type="submit" class="text-gray-400 hover:text-white text-sm">{% if job.status == 'open' %}Close{% else %}Reopen{% endif %}</button></form>
+                            <a href="{% url 'internships:delete_job' job.pk %}" class="text-red-400 hover:text-red-300 text-sm">Delete</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center py-12">
+                <svg class="w-16 h-16 text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                <h3 class="text-xl font-semibold text-gray-400 mb-2">No jobs posted yet</h3>
+                <a href="{% url 'internships:create_job' %}" class="text-indigo-400 hover:text-indigo-300">Post your first job</a>
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+</div>
+{% endblock %}

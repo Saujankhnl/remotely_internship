@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block title %}<title>Applications - {{ job.title }} - Remotely</title>{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <nav class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <a href="{% url 'internships:my_jobs' %}" class="flex items-center gap-2 text-gray-300 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                Back to My Jobs
+            </a>
+            <a href="{% url 'accounts:dashboard' %}" class="text-gray-300 hover:text-white text-sm">Dashboard</a>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 py-6">
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-2xl font-bold text-white">{{ job.title }}</h1>
+                <p class="text-gray-400">{{ applications|length }} application{{ applications|length|pluralize }}</p>
+            </div>
+            <form method="get" class="flex gap-2">
+                <select name="status" class="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm" onchange="this.form.submit()">
+                    <option value="">All Status</option>
+                    <option value="pending" {% if selected_status == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="reviewed" {% if selected_status == 'reviewed' %}selected{% endif %}>Reviewed</option>
+                    <option value="shortlisted" {% if selected_status == 'shortlisted' %}selected{% endif %}>Shortlisted</option>
+                    <option value="interview" {% if selected_status == 'interview' %}selected{% endif %}>Interview</option>
+                    <option value="accepted" {% if selected_status == 'accepted' %}selected{% endif %}>Accepted</option>
+                    <option value="rejected" {% if selected_status == 'rejected' %}selected{% endif %}>Rejected</option>
+                </select>
+            </form>
+        </div>
+
+        <div class="grid gap-4">
+            {% for app in applications %}
+            <a href="{% url 'internships:job_application_detail' app.pk %}" class="block bg-gray-800 border border-gray-700 rounded-xl p-5 hover:border-indigo-500 transition">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h3 class="text-lg font-bold text-white mb-1">{{ app.full_name }}</h3>
+                        <p class="text-gray-400 text-sm mb-2">{{ app.email }} • {{ app.phone }}</p>
+                        <div class="flex gap-4 text-sm text-gray-500">
+                            <span>{{ app.years_of_experience }} years exp.</span>
+                            <span>Applied {{ app.applied_at|timesince }} ago</span>
+                        </div>
+                    </div>
+                    <span class="px-3 py-1 rounded-full text-xs
+                        {% if app.status == 'pending' %}bg-gray-600 text-gray-300
+                        {% elif app.status == 'reviewed' %}bg-blue-900 text-blue-300
+                        {% elif app.status == 'shortlisted' %}bg-yellow-900 text-yellow-300
+                        {% elif app.status == 'interview' %}bg-purple-900 text-purple-300
+                        {% elif app.status == 'accepted' %}bg-green-900 text-green-300
+                        {% elif app.status == 'rejected' %}bg-red-900 text-red-300{% endif %}">
+                        {{ app.get_status_display }}
+                    </span>
+                </div>
+            </a>
+            {% empty %}
+            <div class="text-center py-12">
+                <svg class="w-16 h-16 text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                <h3 class="text-xl font-semibold text-gray-400">No applications yet</h3>
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+</div>
+{% endblock %}
