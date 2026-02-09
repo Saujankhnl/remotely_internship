@@ -1,5 +1,5 @@
 from django import forms
-from .models import CustomUser, UserProfile, CompanyProfile
+from .models import CustomUser, UserProfile, CompanyProfile, UserExperience, UserEducation, UserProject
 
 INPUT_CLASS = 'w-full px-4 py-3 text-base border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500'
 DARK_INPUT_CLASS = 'w-full px-4 py-3 text-base bg-gray-700 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500'
@@ -95,13 +95,17 @@ class UserProfileForm(forms.ModelForm):
     """Profile edit form for Users"""
     class Meta:
         model = UserProfile
-        fields = ['profile_photo', 'full_name', 'phone', 'location', 'bio', 
-                  'skills', 'education', 'experience', 'linkedin', 'github', 
-                  'facebook', 'instagram', 'whatsapp']
+        fields = ['profile_photo', 'full_name', 'headline', 'phone', 'location', 'bio', 
+                  'skills', 'education', 'experience', 'open_to_work', 'is_public',
+                  'linkedin', 'github', 'facebook', 'instagram', 'whatsapp']
         widgets = {
             'full_name': forms.TextInput(attrs={
                 'class': DARK_INPUT_CLASS,
                 'placeholder': 'Your full name'
+            }),
+            'headline': forms.TextInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'e.g., CS Student | Frontend Developer'
             }),
             'phone': forms.TextInput(attrs={
                 'class': DARK_INPUT_CLASS,
@@ -149,6 +153,12 @@ class UserProfileForm(forms.ModelForm):
                 'class': DARK_INPUT_CLASS,
                 'placeholder': '+91 9876543210'
             }),
+            'open_to_work': forms.CheckboxInput(attrs={
+                'class': 'w-5 h-5 rounded',
+            }),
+            'is_public': forms.CheckboxInput(attrs={
+                'class': 'w-5 h-5 rounded',
+            }),
             'profile_photo': forms.FileInput(attrs={
                 'class': 'hidden',
                 'accept': 'image/*'
@@ -162,7 +172,7 @@ class CompanyProfileForm(forms.ModelForm):
         model = CompanyProfile
         fields = ['logo', 'company_name', 'phone', 'location', 'bio',
                   'industry', 'company_size', 'founded_year', 'website',
-                  'linkedin', 'facebook', 'instagram', 'whatsapp']
+                  'is_public', 'linkedin', 'facebook', 'instagram', 'whatsapp']
         widgets = {
             'company_name': forms.TextInput(attrs={
                 'class': DARK_INPUT_CLASS,
@@ -222,5 +232,109 @@ class CompanyProfileForm(forms.ModelForm):
             'logo': forms.FileInput(attrs={
                 'class': 'hidden',
                 'accept': 'image/*'
+            }),
+            'is_public': forms.CheckboxInput(attrs={
+                'class': 'w-5 h-5 rounded',
+            }),
+        }
+
+
+class UserExperienceForm(forms.ModelForm):
+    class Meta:
+        model = UserExperience
+        fields = ['title', 'company_name', 'location', 'employment_type',
+                  'start_date', 'end_date', 'is_current', 'description']
+        widgets = {
+            'title': forms.TextInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'e.g., Software Engineer'
+            }),
+            'company_name': forms.TextInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'e.g., Google'
+            }),
+            'location': forms.TextInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'e.g., New York, USA'
+            }),
+            'employment_type': forms.Select(attrs={
+                'class': DARK_INPUT_CLASS,
+            }),
+            'start_date': forms.DateInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'type': 'date'
+            }),
+            'end_date': forms.DateInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'type': 'date'
+            }),
+            'is_current': forms.CheckboxInput(attrs={
+                'class': 'w-5 h-5 rounded',
+            }),
+            'description': forms.Textarea(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'What did you do in this role?',
+                'rows': 3,
+            }),
+        }
+
+
+class UserEducationForm(forms.ModelForm):
+    class Meta:
+        model = UserEducation
+        fields = ['school', 'degree', 'field_of_study', 'start_year', 'end_year', 'description']
+        widgets = {
+            'school': forms.TextInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'e.g., MIT'
+            }),
+            'degree': forms.TextInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'e.g., Bachelor of Science'
+            }),
+            'field_of_study': forms.TextInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'e.g., Computer Science'
+            }),
+            'start_year': forms.NumberInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': '2020'
+            }),
+            'end_year': forms.NumberInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': '2024'
+            }),
+            'description': forms.Textarea(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'Activities, honors, etc.',
+                'rows': 3,
+            }),
+        }
+
+
+class UserProjectForm(forms.ModelForm):
+    class Meta:
+        model = UserProject
+        fields = ['name', 'url', 'description', 'technologies', 'is_featured']
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'e.g., E-commerce Platform'
+            }),
+            'url': forms.URLInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'https://github.com/...'
+            }),
+            'description': forms.Textarea(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'What does this project do?',
+                'rows': 3,
+            }),
+            'technologies': forms.TextInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'Python, Django, React'
+            }),
+            'is_featured': forms.CheckboxInput(attrs={
+                'class': 'w-5 h-5 rounded',
             }),
         }

@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}<title>Company Approval Status - Remotely</title>{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 px-4 py-6 pb-24">
+    <!-- Header -->
+    <div class="max-w-lg mx-auto mb-6">
+        <div class="flex items-center gap-4">
+            <a href="{% url 'accounts:dashboard' %}" class="text-gray-400 hover:text-white p-2">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+            </a>
+            <h1 class="text-2xl font-bold text-white">Approval Status</h1>
+        </div>
+    </div>
+
+    <div class="max-w-lg mx-auto space-y-6">
+        <!-- Status Card -->
+        <div class="bg-gray-800 border border-gray-700 rounded-2xl p-6 text-center">
+            {% if profile.approval_status == 'pending' %}
+                <div class="w-20 h-20 mx-auto mb-4 bg-yellow-500 bg-opacity-20 rounded-full flex items-center justify-center">
+                    <svg class="w-10 h-10 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <h2 class="text-xl font-bold text-white mb-2">Pending Approval</h2>
+                <p class="text-gray-400 text-sm">Your company profile is under review. Our team will verify your details and approve your account shortly.</p>
+                <div class="mt-4 px-4 py-2 bg-yellow-500 bg-opacity-10 border border-yellow-500 border-opacity-30 rounded-xl">
+                    <p class="text-yellow-400 text-sm font-medium">Estimated review time: 1-2 business days</p>
+                </div>
+
+            {% elif profile.approval_status == 'approved' %}
+                <div class="w-20 h-20 mx-auto mb-4 bg-green-500 bg-opacity-20 rounded-full flex items-center justify-center">
+                    <svg class="w-10 h-10 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <h2 class="text-xl font-bold text-white mb-2">Approved</h2>
+                <p class="text-gray-400 text-sm">Your company is approved. You can now post jobs and internships.</p>
+                {% if profile.approved_at %}
+                <p class="text-gray-500 text-xs mt-2">Approved on {{ profile.approved_at|date:"M d, Y" }}</p>
+                {% endif %}
+
+            {% elif profile.approval_status == 'rejected' %}
+                <div class="w-20 h-20 mx-auto mb-4 bg-red-500 bg-opacity-20 rounded-full flex items-center justify-center">
+                    <svg class="w-10 h-10 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <h2 class="text-xl font-bold text-white mb-2">Rejected</h2>
+                <p class="text-gray-400 text-sm">Unfortunately, your company profile was not approved.</p>
+                {% if profile.rejection_reason %}
+                <div class="mt-4 bg-red-500 bg-opacity-10 border border-red-500 border-opacity-30 rounded-xl p-4 text-left">
+                    <p class="text-red-400 text-sm font-medium mb-1">Reason:</p>
+                    <p class="text-gray-300 text-sm">{{ profile.rejection_reason }}</p>
+                </div>
+                {% endif %}
+
+            {% elif profile.approval_status == 'suspended' %}
+                <div class="w-20 h-20 mx-auto mb-4 bg-orange-500 bg-opacity-20 rounded-full flex items-center justify-center">
+                    <svg class="w-10 h-10 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.34 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                </div>
+                <h2 class="text-xl font-bold text-white mb-2">Suspended</h2>
+                <p class="text-gray-400 text-sm">Your company account has been suspended. All your job and internship posts have been closed.</p>
+                <div class="mt-4 bg-orange-500 bg-opacity-10 border border-orange-500 border-opacity-30 rounded-xl p-4">
+                    <p class="text-orange-400 text-sm">Please contact support for more information.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Profile Completeness -->
+        <div class="bg-gray-800 border border-gray-700 rounded-2xl p-6">
+            <h3 class="text-white font-semibold mb-3">Profile Completeness</h3>
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm text-gray-400">{{ profile.completeness_score }}% complete</span>
+                {% if profile.completeness_score == 100 %}
+                <span class="text-green-400 text-sm font-medium">Complete</span>
+                {% endif %}
+            </div>
+            <div class="w-full bg-gray-600 rounded-full h-3">
+                <div class="h-3 rounded-full transition-all {% if profile.completeness_score >= 80 %}bg-green-500{% elif profile.completeness_score >= 50 %}bg-yellow-500{% else %}bg-red-500{% endif %}" style="width: {{ profile.completeness_score }}%"></div>
+            </div>
+            <p class="text-gray-500 text-xs mt-3">A complete profile increases your chances of approval and builds trust with applicants.</p>
+        </div>
+
+        <!-- Tips -->
+        <div class="bg-gray-800 border border-gray-700 rounded-2xl p-6">
+            <h3 class="text-white font-semibold mb-3 flex items-center gap-2">
+                <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Tips for Approval
+            </h3>
+            <ul class="space-y-3">
+                <li class="flex items-start gap-3 text-sm">
+                    <svg class="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    <span class="text-gray-300">Add your company logo and a detailed description</span>
+                </li>
+                <li class="flex items-start gap-3 text-sm">
+                    <svg class="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    <span class="text-gray-300">Fill in your industry, company size, and founded year</span>
+                </li>
+                <li class="flex items-start gap-3 text-sm">
+                    <svg class="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    <span class="text-gray-300">Add your company website and social media links</span>
+                </li>
+                <li class="flex items-start gap-3 text-sm">
+                    <svg class="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    <span class="text-gray-300">Provide a valid phone number and location</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Actions -->
+        <div class="space-y-3">
+            <a href="{% url 'accounts:edit_profile' %}" class="block w-full text-center bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl transition">
+                {% if profile.approval_status == 'rejected' %}Update & Resubmit Profile{% else %}Edit Profile{% endif %}
+            </a>
+            <a href="{% url 'accounts:dashboard' %}" class="block w-full text-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 rounded-xl transition">
+                Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

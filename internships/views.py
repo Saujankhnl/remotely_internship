@@ -9,6 +9,7 @@ from functools import wraps
 from .models import Internship, Application, Job, JobApplication, JobBookmark, JobView, Interview
 from .forms import InternshipForm, ApplicationForm, JobForm, JobApplicationForm, InterviewForm
 from .emails import send_application_status_email, send_interview_scheduled_email
+from accounts.decorators import company_approved_required
 
 
 def company_required(view_func):
@@ -89,7 +90,7 @@ def internship_detail(request, pk):
 
 # ============ Company Views ============
 
-@company_required
+@company_approved_required
 def create_internship(request):
     """Create a new internship posting"""
     if request.method == 'POST':
@@ -141,7 +142,7 @@ def delete_internship(request, pk):
     })
 
 
-@company_required
+@company_approved_required
 def toggle_internship_status(request, pk):
     """Toggle internship status between open and closed"""
     internship = get_object_or_404(Internship, pk=pk, company=request.user)
@@ -346,7 +347,7 @@ def job_detail(request, pk):
     })
 
 
-@company_required
+@company_approved_required
 def create_job(request):
     """Create a new job posting"""
     if request.method == 'POST':
@@ -396,7 +397,7 @@ def delete_job(request, pk):
     return render(request, 'internships/delete_job.html', {'job': job})
 
 
-@company_required
+@company_approved_required
 def toggle_job_status(request, pk):
     """Toggle job status between open and closed"""
     job = get_object_or_404(Job, pk=pk, company=request.user)

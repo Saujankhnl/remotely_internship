@@ -1,4 +1,5 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
+from django.http import Http404
 from django.contrib.auth import login, authenticate, logout
 from django.contrib import messages
 from .forms import UserRegisterForm, CompanyRegisterForm, UserProfileForm, CompanyProfileForm
@@ -362,7 +363,9 @@ def edit_profile(request):
     if request.method == 'POST':
         form = FormClass(request.POST, request.FILES, instance=profile)
         if form.is_valid():
-            form.save()
+            profile = form.save()
+            profile.calculate_completeness()
+            profile.save(update_fields=['completeness_score'])
             messages.success(request, 'Profile updated successfully!')
             return redirect('accounts:dashboard')
     else:
@@ -372,4 +375,77 @@ def edit_profile(request):
         'form': form,
         'profile': profile,
         'user_type': user.user_type
+    })
+
+
+def public_user_profile(request, username):
+    """Public profile page for job seekers"""
+    from .models import UserProfile
+    target_user = get_object_or_404(CustomUser, username=username, user_type='user')
+    profile = get_object_or_404(UserProfile, user=target_user)
+    
+    if not profile.is_public and (not request.user.is_authenticated or (request.user != target_user and not request.user.is_staff)):
+        raise Http404
+    
+    is_owner = request.user.is_authenticated and request.user == target_user
+    
+    experiences = profile.experiences.all()
+    educations = profile.educations.all()
+    projects = profile.projects.all()
+    
+    skills_list = [s.strip() for s in profile.skills.split(',') if s.strip()] if profile.skills else []
+    
+    return render(request, 'accounts/public_user_profile.html', {
+        'target_user': target_user,
+        'profile': profile,
+        'is_owner': is_owner,
+        'experiences': experiences,
+        'educations': educations,
+        'projects': projects,
+        'skills_list': skills_list,
+    })
+
+
+def public_company_profile(request, slug):
+    """Public profile page for companies"""
+    from .models import CompanyProfile
+    from internships.models import Job, Internship
+    
+    profile = get_object_or_404(CompanyProfile, slug=slug)
+    
+    if not profile.is_public and (not request.user.is_authenticated or (request.user != profile.user and not request.user.is_staff)):
+        raise Http404
+    
+    is_owner = request.user.is_authenticated and request.user == profile.user
+    
+    open_jobs = Job.objects.filter(company=profile.user, status='open').order_by('-created_at')[:10]
+    open_internships = Internship.objects.filter(company=profile.user, status='open').order_by('-created_at')[:10]
+    
+    total_jobs = Job.objects.filter(company=profile.user).count()
+    total_internships = Internship.objects.filter(company=profile.user).count()
+    
+    return render(request, 'accounts/public_company_profile.html', {
+        'profile': profile,
+        'target_user': profile.user,
+        'is_owner': is_owner,
+        'open_jobs': open_jobs,
+        'open_internships': open_internships,
+        'total_jobs': total_jobs,
+        'total_internships': total_internships,
+    })
+
+
+@login_required
+def company_approval_status(request):
+    """Shows company approval status, rejection reason, and guidance"""
+    if request.user.user_type != 'company':
+        return redirect('accounts:dashboard')
+    
+    profile, _ = CompanyProfile.objects.get_or_create(user=request.user)
+    profile.calculate_completeness()
+    profile.save(update_fields=['completeness_score'])
+    
+    return render(request, 'accounts/company_approval_status.html', {
+        'profile': profile,
+        'user_type': 'company',
     })
