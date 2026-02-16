@@ -62,11 +62,44 @@
                         {{ profile.full_name|default:user.username }}
                     {% endif %}
                 </h2>
+                {% if user_type == 'user' and profile.headline %}
+                    <p class="text-gray-300 text-xs mt-1">{{ profile.headline }}</p>
+                {% endif %}
                 <p class="text-gray-400 text-sm">@{{ user.username }}</p>
-                <span class="inline-block mt-2 px-3 py-1 {% if user_type == 'company' %}bg-green-500{% else %}bg-blue-500{% endif %} text-white text-xs rounded-full">
-                    {{ user_type|title }}
-                </span>
+                <div class="flex items-center justify-center gap-2 mt-2 flex-wrap">
+                    <span class="px-3 py-1 {% if user_type == 'company' %}bg-green-500{% else %}bg-blue-500{% endif %} text-white text-xs rounded-full">
+                        {{ user_type|title }}
+                    </span>
+                    {% if user_type == 'company' and profile.approval_status == 'approved' %}
+                        <span class="px-2 py-1 bg-green-500 bg-opacity-20 text-green-400 text-xs rounded-full flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                            Approved
+                        </span>
+                    {% endif %}
+                    {% if user_type == 'company' and profile.is_verified %}
+                        <span class="px-2 py-1 bg-blue-500 bg-opacity-20 text-blue-400 text-xs rounded-full flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                            Verified
+                        </span>
+                    {% endif %}
+                    {% if user_type == 'user' and profile.open_to_work %}
+                        <span class="px-2 py-1 bg-green-500 bg-opacity-20 text-green-400 text-xs rounded-full">Open to Work</span>
+                    {% endif %}
+                </div>
             </div>
+
+            <!-- Profile Completeness -->
+            {% if profile.completeness_score < 100 %}
+            <div class="bg-gray-700 rounded-xl p-3 mb-4">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-gray-400 text-xs">Profile Completeness</span>
+                    <span class="text-xs font-bold {% if profile.completeness_score >= 80 %}text-green-400{% elif profile.completeness_score >= 50 %}text-yellow-400{% else %}text-red-400{% endif %}">{{ profile.completeness_score }}%</span>
+                </div>
+                <div class="w-full bg-gray-600 rounded-full h-1.5">
+                    <div class="h-1.5 rounded-full transition-all {% if profile.completeness_score >= 80 %}bg-green-500{% elif profile.completeness_score >= 50 %}bg-yellow-500{% else %}bg-red-500{% endif %}" style="width: {{ profile.completeness_score }}%"></div>
+                </div>
+            </div>
+            {% endif %}
 
             <!-- Contact Info -->
             <div class="bg-gray-700 rounded-xl p-4 mb-4 space-y-3">
@@ -194,9 +227,26 @@
 
             <!-- Action Buttons -->
             <div class="space-y-3">
+                {% if user_type == 'user' %}
+                    <a href="{% url 'accounts:public_user_profile' user.username %}" class="block w-full text-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 rounded-xl transition flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                        View Public Profile
+                    </a>
+                {% elif user_type == 'company' and profile.slug %}
+                    <a href="{% url 'accounts:public_company_profile' profile.slug %}" class="block w-full text-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 rounded-xl transition flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                        View Public Profile
+                    </a>
+                {% endif %}
                 <a href="{% url 'accounts:edit_profile' %}" class="block w-full text-center bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl transition">
                     Edit Profile
                 </a>
+                {% if user_type == 'company' %}
+                    <a href="{% url 'accounts:company_approval_status' %}" class="block w-full text-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 rounded-xl transition flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                        Approval Status
+                    </a>
+                {% endif %}
                 <a href="{% url 'accounts:logout' %}" class="block w-full text-center bg-red-500 hover:bg-red-600 text-white font-semibold py-3 rounded-xl transition">
                     Logout
                 </a>
@@ -447,7 +497,56 @@
 
         {% else %}
         <!-- ==================== COMPANY DASHBOARD ==================== -->
-        
+
+        <!-- Company Trust & Verification Card -->
+        <div class="bg-gray-800 border border-gray-700 rounded-2xl p-5 mb-6">
+            <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+                <!-- Company Logo + Info -->
+                <div class="flex items-center gap-4 flex-1">
+                    <div class="w-14 h-14 rounded-2xl bg-gradient-to-r from-green-400 to-green-600 flex items-center justify-center text-white text-xl font-bold overflow-hidden flex-shrink-0">
+                        {% if profile.logo %}
+                            <img src="{{ profile.logo.url }}" class="w-full h-full object-cover">
+                        {% else %}
+                            {{ profile.company_name|slice:":1"|upper|default:user.username|slice:":1"|upper }}
+                        {% endif %}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <h2 class="text-lg font-bold text-white truncate">{{ profile.company_name|default:user.username }}</h2>
+                            {% if profile.approval_status == 'approved' %}
+                                <span class="px-2 py-0.5 bg-green-500 bg-opacity-20 text-green-400 text-xs rounded-full flex items-center gap-1 flex-shrink-0">
+                                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                                    Approved
+                                </span>
+                            {% endif %}
+                            {% if profile.is_verified %}
+                                <span class="px-2 py-0.5 bg-blue-500 bg-opacity-20 text-blue-400 text-xs rounded-full flex items-center gap-1 flex-shrink-0">
+                                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                                    Verified
+                                </span>
+                            {% endif %}
+                        </div>
+                        <p class="text-gray-400 text-sm mt-0.5">{{ profile.industry|default:"Industry not set" }}{% if profile.location %} · {{ profile.location }}{% endif %}</p>
+                    </div>
+                </div>
+                <!-- Profile Completeness Ring -->
+                <div class="flex items-center gap-4 flex-shrink-0">
+                    <div class="relative w-12 h-12">
+                        <svg class="w-12 h-12 -rotate-90" viewBox="0 0 48 48">
+                            <circle cx="24" cy="24" r="20" fill="none" stroke="#374151" stroke-width="3"></circle>
+                            <circle cx="24" cy="24" r="20" fill="none" stroke="{% if profile.completeness_score >= 80 %}#10B981{% elif profile.completeness_score >= 50 %}#EAB308{% else %}#EF4444{% endif %}" stroke-width="3" stroke-dasharray="{% widthratio profile.completeness_score 100 126 %} 126" stroke-linecap="round"></circle>
+                        </svg>
+                        <span class="absolute inset-0 flex items-center justify-center text-white text-xs font-bold">{{ profile.completeness_score }}%</span>
+                    </div>
+                    {% if profile.slug %}
+                    <a href="{% url 'accounts:public_company_profile' profile.slug %}" class="bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium px-4 py-2 rounded-xl transition hidden sm:block">
+                        View Public Page
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
         <!-- Stats Cards -->
         <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
             <div class="bg-gray-800 border border-gray-700 rounded-xl p-4">
@@ -512,8 +611,9 @@
             </div>
         </div>
 
-        <!-- Quick Actions -->
+        <!-- Quick Actions (approval-aware) -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            {% if profile.approval_status == 'approved' %}
             <a href="{% url 'internships:create_job' %}" class="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 p-5 rounded-xl transition flex items-center gap-4">
                 <div class="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
                     <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -536,6 +636,30 @@
                     <p class="text-green-200 text-sm">Create internship</p>
                 </div>
             </a>
+            {% else %}
+            <div class="bg-gray-800 border border-gray-600 border-dashed p-5 rounded-xl flex items-center gap-4 opacity-60">
+                <div class="w-12 h-12 bg-gray-700 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold text-gray-400">Post Job</h3>
+                    <p class="text-gray-500 text-xs">Requires approval</p>
+                </div>
+            </div>
+            <div class="bg-gray-800 border border-gray-600 border-dashed p-5 rounded-xl flex items-center gap-4 opacity-60">
+                <div class="w-12 h-12 bg-gray-700 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold text-gray-400">Post Internship</h3>
+                    <p class="text-gray-500 text-xs">Requires approval</p>
+                </div>
+            </div>
+            {% endif %}
             <a href="{% url 'internships:my_jobs' %}" class="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 p-5 rounded-xl transition flex items-center gap-4">
                 <div class="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
                     <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -571,23 +695,28 @@
                 {% if my_jobs %}
                 <div class="divide-y divide-gray-700">
                     {% for job in my_jobs %}
-                    <div class="p-4 hover:bg-gray-750 transition">
+                    <a href="{% url 'internships:job_detail' job.pk %}" class="p-4 hover:bg-gray-750 transition block">
                         <div class="flex items-center justify-between">
-                            <div class="flex-1">
-                                <h3 class="font-semibold text-white">{{ job.title }}</h3>
-                                <p class="text-gray-400 text-sm">{{ job.apps_count }} applications</p>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="font-semibold text-white truncate">{{ job.title }}</h3>
+                                <p class="text-gray-400 text-sm">{{ job.apps_count }} application{{ job.apps_count|pluralize }} · {{ job.location }}</p>
                             </div>
-                            <span class="px-2 py-1 text-xs rounded-full {% if job.status == 'open' %}bg-green-500 bg-opacity-20 text-green-400{% else %}bg-gray-500 bg-opacity-20 text-gray-400{% endif %}">
+                            <span class="px-2 py-1 text-xs rounded-full ml-2 flex-shrink-0 {% if job.status == 'open' %}bg-green-500 bg-opacity-20 text-green-400{% else %}bg-gray-500 bg-opacity-20 text-gray-400{% endif %}">
                                 {{ job.get_status_display }}
                             </span>
                         </div>
-                    </div>
+                    </a>
                     {% endfor %}
                 </div>
                 {% else %}
                 <div class="p-6 text-center text-gray-500">
+                    <svg class="w-10 h-10 mx-auto mb-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                     <p>No jobs posted yet</p>
+                    {% if profile.approval_status == 'approved' %}
                     <a href="{% url 'internships:create_job' %}" class="text-indigo-400 hover:text-indigo-300 text-sm">Post a Job →</a>
+                    {% else %}
+                    <p class="text-gray-600 text-xs mt-1">Get approved to start posting</p>
+                    {% endif %}
                 </div>
                 {% endif %}
             </div>
@@ -601,23 +730,28 @@
                 {% if my_internships %}
                 <div class="divide-y divide-gray-700">
                     {% for internship in my_internships %}
-                    <div class="p-4 hover:bg-gray-750 transition">
+                    <a href="{% url 'internships:internship_detail' internship.pk %}" class="p-4 hover:bg-gray-750 transition block">
                         <div class="flex items-center justify-between">
-                            <div class="flex-1">
-                                <h3 class="font-semibold text-white">{{ internship.title }}</h3>
-                                <p class="text-gray-400 text-sm">{{ internship.apps_count }} applications</p>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="font-semibold text-white truncate">{{ internship.title }}</h3>
+                                <p class="text-gray-400 text-sm">{{ internship.apps_count }} application{{ internship.apps_count|pluralize }} · {{ internship.location }}</p>
                             </div>
-                            <span class="px-2 py-1 text-xs rounded-full {% if internship.status == 'open' %}bg-green-500 bg-opacity-20 text-green-400{% else %}bg-gray-500 bg-opacity-20 text-gray-400{% endif %}">
+                            <span class="px-2 py-1 text-xs rounded-full ml-2 flex-shrink-0 {% if internship.status == 'open' %}bg-green-500 bg-opacity-20 text-green-400{% else %}bg-gray-500 bg-opacity-20 text-gray-400{% endif %}">
                                 {{ internship.get_status_display }}
                             </span>
                         </div>
-                    </div>
+                    </a>
                     {% endfor %}
                 </div>
                 {% else %}
                 <div class="p-6 text-center text-gray-500">
+                    <svg class="w-10 h-10 mx-auto mb-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
                     <p>No internships posted yet</p>
+                    {% if profile.approval_status == 'approved' %}
                     <a href="{% url 'internships:create_internship' %}" class="text-indigo-400 hover:text-indigo-300 text-sm">Post Internship →</a>
+                    {% else %}
+                    <p class="text-gray-600 text-xs mt-1">Get approved to start posting</p>
+                    {% endif %}
                 </div>
                 {% endif %}
             </div>
@@ -634,14 +768,19 @@
                 <div class="divide-y divide-gray-700">
                     {% for application in recent_job_apps %}
                     <a href="{% url 'internships:job_application_detail' application.pk %}" class="p-4 hover:bg-gray-750 transition block">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="font-semibold text-white">{{ application.full_name }}</p>
-                                <p class="text-gray-400 text-sm">{{ application.job.title }}</p>
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-full bg-gradient-to-r from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                                {{ application.full_name|slice:":1"|upper }}
                             </div>
-                            <span class="px-2 py-1 text-xs rounded-full 
+                            <div class="flex-1 min-w-0">
+                                <p class="font-semibold text-white text-sm truncate">{{ application.full_name }}</p>
+                                <p class="text-gray-400 text-xs truncate">{{ application.job.title }}</p>
+                            </div>
+                            <span class="px-2 py-1 text-xs rounded-full flex-shrink-0
                                 {% if application.status == 'pending' %}bg-yellow-500 bg-opacity-20 text-yellow-400
                                 {% elif application.status == 'accepted' %}bg-green-500 bg-opacity-20 text-green-400
+                                {% elif application.status == 'interview' %}bg-purple-500 bg-opacity-20 text-purple-400
+                                {% elif application.status == 'rejected' %}bg-red-500 bg-opacity-20 text-red-400
                                 {% else %}bg-blue-500 bg-opacity-20 text-blue-400{% endif %}">
                                 {{ application.get_status_display }}
                             </span>
@@ -663,14 +802,18 @@
                 <div class="divide-y divide-gray-700">
                     {% for application in recent_internship_apps %}
                     <a href="{% url 'internships:application_detail' application.pk %}" class="p-4 hover:bg-gray-750 transition block">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="font-semibold text-white">{{ application.full_name }}</p>
-                                <p class="text-gray-400 text-sm">{{ application.internship.title }}</p>
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-full bg-gradient-to-r from-green-400 to-green-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                                {{ application.full_name|slice:":1"|upper }}
                             </div>
-                            <span class="px-2 py-1 text-xs rounded-full 
+                            <div class="flex-1 min-w-0">
+                                <p class="font-semibold text-white text-sm truncate">{{ application.full_name }}</p>
+                                <p class="text-gray-400 text-xs truncate">{{ application.internship.title }}</p>
+                            </div>
+                            <span class="px-2 py-1 text-xs rounded-full flex-shrink-0
                                 {% if application.status == 'pending' %}bg-yellow-500 bg-opacity-20 text-yellow-400
                                 {% elif application.status == 'accepted' %}bg-green-500 bg-opacity-20 text-green-400
+                                {% elif application.status == 'rejected' %}bg-red-500 bg-opacity-20 text-red-400
                                 {% else %}bg-blue-500 bg-opacity-20 text-blue-400{% endif %}">
                                 {{ application.get_status_display }}
                             </span>

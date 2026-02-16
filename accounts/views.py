@@ -138,6 +138,8 @@ def dashboard(request):
     if user.user_type == 'user':
         # USER/STUDENT DASHBOARD
         profile, _ = UserProfile.objects.get_or_create(user=user)
+        profile.calculate_completeness()
+        profile.save(update_fields=['completeness_score'])
         
         # Import here to avoid circular imports
         from internships.models import Application, Internship, Job, JobApplication, JobBookmark, Interview
@@ -188,6 +190,8 @@ def dashboard(request):
     else:
         # COMPANY DASHBOARD
         profile, _ = CompanyProfile.objects.get_or_create(user=user)
+        profile.calculate_completeness()
+        profile.save(update_fields=['completeness_score'])
         
         from internships.models import Internship, Application, Job, JobApplication, JobView
         from django.db.models import Count
