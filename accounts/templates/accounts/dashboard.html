@@ -7,7 +7,7 @@
     <!-- Navigation Bar -->
     <nav class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-3">
                 <span class="text-xl sm:text-2xl font-bold text-white">Remotely</span>
                 {% if user_type == 'company' %}
                     <span class="px-2 py-1 bg-green-500 text-white text-xs font-semibold rounded-full hidden sm:inline">Company</span>
@@ -16,21 +16,29 @@
                 {% endif %}
             </div>
             
-            <!-- Profile Button -->
-            <button id="profileBtn" class="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded-full transition duration-200">
-                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-r {% if user_type == 'company' %}from-green-400 to-green-600{% else %}from-blue-400 to-blue-600{% endif %} flex items-center justify-center text-white font-bold text-sm overflow-hidden">
-                    {% if user_type == 'company' and profile.logo %}
-                        <img src="{{ profile.logo.url }}" class="w-full h-full object-cover">
-                    {% elif user_type == 'user' and profile.profile_photo %}
-                        <img src="{{ profile.profile_photo.url }}" class="w-full h-full object-cover">
-                    {% else %}
-                        {{ user.username|slice:":1"|upper }}
-                    {% endif %}
-                </div>
-                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                </svg>
-            </button>
+            <div class="flex items-center gap-3">
+                <a href="{% url 'internships:job_list' %}" class="text-gray-400 hover:text-white text-sm hidden sm:inline">Jobs</a>
+                <a href="{% url 'internships:internship_list' %}" class="text-gray-400 hover:text-white text-sm hidden sm:inline">Internships</a>
+                {% if user.is_staff %}
+                <a href="{% url 'accounts:admin_dashboard' %}" class="text-yellow-400 hover:text-yellow-300 text-sm hidden sm:inline">Admin Panel</a>
+                {% endif %}
+            
+                <!-- Profile Button -->
+                <button id="profileBtn" class="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded-full transition duration-200">
+                    <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-r {% if user_type == 'company' %}from-green-400 to-green-600{% else %}from-blue-400 to-blue-600{% endif %} flex items-center justify-center text-white font-bold text-sm overflow-hidden">
+                        {% if user_type == 'company' and profile.logo %}
+                            <img src="{{ profile.logo.url }}" class="w-full h-full object-cover">
+                        {% elif user_type == 'user' and profile.profile_photo %}
+                            <img src="{{ profile.profile_photo.url }}" class="w-full h-full object-cover">
+                        {% else %}
+                            {{ user.username|slice:":1"|upper }}
+                        {% endif %}
+                    </div>
+                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </button>
+            </div>
         </div>
     </nav>
 
@@ -287,7 +295,7 @@
         <!-- ==================== USER/STUDENT DASHBOARD ==================== -->
         
         <!-- Stats Cards -->
-        <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+        <div class="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
             <div class="bg-gray-800 border border-gray-700 rounded-xl p-4">
                 <div class="flex items-center justify-between mb-2">
                     <div class="w-10 h-10 bg-blue-500 bg-opacity-20 rounded-lg flex items-center justify-center">
@@ -298,18 +306,6 @@
                 </div>
                 <p class="text-2xl font-bold text-white">{{ total_applications }}</p>
                 <p class="text-gray-400 text-sm">Total Applications</p>
-            </div>
-            
-            <div class="bg-gray-800 border border-gray-700 rounded-xl p-4">
-                <div class="flex items-center justify-between mb-2">
-                    <div class="w-10 h-10 bg-purple-500 bg-opacity-20 rounded-lg flex items-center justify-center">
-                        <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                        </svg>
-                    </div>
-                </div>
-                <p class="text-2xl font-bold text-purple-400">{{ interview_count }}</p>
-                <p class="text-gray-400 text-sm">Interviews</p>
             </div>
             
             <div class="bg-gray-800 border border-gray-700 rounded-xl p-4">
@@ -326,6 +322,18 @@
             
             <div class="bg-gray-800 border border-gray-700 rounded-xl p-4">
                 <div class="flex items-center justify-between mb-2">
+                    <div class="w-10 h-10 bg-purple-500 bg-opacity-20 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <p class="text-2xl font-bold text-purple-400">{{ interview_count }}</p>
+                <p class="text-gray-400 text-sm">Interviews</p>
+            </div>
+            
+            <div class="bg-gray-800 border border-gray-700 rounded-xl p-4">
+                <div class="flex items-center justify-between mb-2">
                     <div class="w-10 h-10 bg-green-500 bg-opacity-20 rounded-lg flex items-center justify-center">
                         <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -334,6 +342,18 @@
                 </div>
                 <p class="text-2xl font-bold text-green-400">{{ accepted_count }}</p>
                 <p class="text-gray-400 text-sm">Accepted</p>
+            </div>
+            
+            <div class="bg-gray-800 border border-gray-700 rounded-xl p-4">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="w-10 h-10 bg-red-500 bg-opacity-20 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <p class="text-2xl font-bold text-red-400">{{ rejected_count }}</p>
+                <p class="text-gray-400 text-sm">Rejected</p>
             </div>
             
             <div class="bg-gray-800 border border-gray-700 rounded-xl p-4">
@@ -548,7 +568,7 @@
         </div>
 
         <!-- Stats Cards -->
-        <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <div class="bg-gray-800 border border-gray-700 rounded-xl p-4">
                 <div class="flex items-center justify-between mb-2">
                     <div class="w-10 h-10 bg-green-500 bg-opacity-20 rounded-lg flex items-center justify-center">
@@ -559,6 +579,7 @@
                 </div>
                 <p class="text-2xl font-bold text-white">{{ total_posts }}</p>
                 <p class="text-gray-400 text-sm">Total Posts</p>
+                <p class="text-gray-500 text-xs mt-1">{{ active_posts }} active</p>
             </div>
             
             <div class="bg-gray-800 border border-gray-700 rounded-xl p-4">
@@ -570,19 +591,7 @@
                     </div>
                 </div>
                 <p class="text-2xl font-bold text-blue-400">{{ total_applications }}</p>
-                <p class="text-gray-400 text-sm">Applications</p>
-            </div>
-            
-            <div class="bg-gray-800 border border-gray-700 rounded-xl p-4">
-                <div class="flex items-center justify-between mb-2">
-                    <div class="w-10 h-10 bg-yellow-500 bg-opacity-20 rounded-lg flex items-center justify-center">
-                        <svg class="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                    </div>
-                </div>
-                <p class="text-2xl font-bold text-yellow-400">{{ pending_applications }}</p>
-                <p class="text-gray-400 text-sm">Pending</p>
+                <p class="text-gray-400 text-sm">Total Applications</p>
             </div>
             
             <div class="bg-gray-800 border border-gray-700 rounded-xl p-4">
@@ -600,19 +609,64 @@
             
             <div class="bg-gray-800 border border-gray-700 rounded-xl p-4">
                 <div class="flex items-center justify-between mb-2">
-                    <div class="w-10 h-10 bg-purple-500 bg-opacity-20 rounded-lg flex items-center justify-center">
-                        <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    <div class="w-10 h-10 bg-yellow-500 bg-opacity-20 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
                     </div>
                 </div>
-                <p class="text-2xl font-bold text-green-400">{{ active_posts }}</p>
-                <p class="text-gray-400 text-sm">Active</p>
+                <p class="text-2xl font-bold text-yellow-400">{{ pending_applications }}</p>
+                <p class="text-gray-400 text-sm">Pending Review</p>
             </div>
         </div>
 
+        <!-- Application Status Breakdown -->
+        {% if total_applications > 0 %}
+        <div class="bg-gray-800 border border-gray-700 rounded-2xl p-5 mb-6">
+            <h2 class="text-lg font-bold text-white mb-4">Application Status Breakdown</h2>
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-3 h-3 rounded-full bg-yellow-400"></div>
+                    <div>
+                        <p class="text-white font-semibold">{{ pending_applications }}</p>
+                        <p class="text-gray-400 text-xs">Pending</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="w-3 h-3 rounded-full bg-purple-400"></div>
+                    <div>
+                        <p class="text-white font-semibold">{{ interview_applications }}</p>
+                        <p class="text-gray-400 text-xs">Interview</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="w-3 h-3 rounded-full bg-green-400"></div>
+                    <div>
+                        <p class="text-white font-semibold">{{ accepted_applications }}</p>
+                        <p class="text-gray-400 text-xs">Accepted</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="w-3 h-3 rounded-full bg-red-400"></div>
+                    <div>
+                        <p class="text-white font-semibold">{{ rejected_applications }}</p>
+                        <p class="text-gray-400 text-xs">Rejected</p>
+                    </div>
+                </div>
+            </div>
+            {% if total_applications > 0 %}
+            <div class="mt-4 w-full bg-gray-700 rounded-full h-2.5 flex overflow-hidden">
+                <div class="bg-yellow-400 h-2.5" style="width: {% widthratio pending_applications total_applications 100 %}%"></div>
+                <div class="bg-purple-400 h-2.5" style="width: {% widthratio interview_applications total_applications 100 %}%"></div>
+                <div class="bg-green-400 h-2.5" style="width: {% widthratio accepted_applications total_applications 100 %}%"></div>
+                <div class="bg-red-400 h-2.5" style="width: {% widthratio rejected_applications total_applications 100 %}%"></div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
         <!-- Quick Actions (approval-aware) -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
             {% if profile.approval_status == 'approved' %}
             <a href="{% url 'internships:create_job' %}" class="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 p-5 rounded-xl transition flex items-center gap-4">
                 <div class="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
@@ -671,6 +725,17 @@
                     <p class="text-blue-200 text-sm">{{ total_job_posts }} jobs</p>
                 </div>
             </a>
+            <a href="{% url 'internships:my_internships' %}" class="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 p-5 rounded-xl transition flex items-center gap-4">
+                <div class="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white">Internships</h3>
+                    <p class="text-teal-200 text-sm">{{ total_internship_posts }} posted</p>
+                </div>
+            </a>
             <a href="{% url 'internships:company_analytics' %}" class="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 p-5 rounded-xl transition flex items-center gap-4">
                 <div class="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
                     <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -696,7 +761,7 @@
                 <div class="divide-y divide-gray-700">
                     {% for job in my_jobs %}
                     <a href="{% url 'internships:job_detail' job.pk %}" class="p-4 hover:bg-gray-750 transition block">
-                        <div class="flex items-center justify-between">
+                        <div class="flex items-center justify-between mb-1">
                             <div class="flex-1 min-w-0">
                                 <h3 class="font-semibold text-white truncate">{{ job.title }}</h3>
                                 <p class="text-gray-400 text-sm">{{ job.apps_count }} application{{ job.apps_count|pluralize }} · {{ job.location }}</p>
@@ -705,6 +770,14 @@
                                 {{ job.get_status_display }}
                             </span>
                         </div>
+                        {% if job.apps_count > 0 %}
+                        <div class="flex flex-wrap gap-2 mt-1">
+                            <span class="text-yellow-400 text-xs">{{ job.pending_count }} pending</span>
+                            <span class="text-purple-400 text-xs">{{ job.interview_count }} interview</span>
+                            <span class="text-green-400 text-xs">{{ job.accepted_count }} accepted</span>
+                            <span class="text-red-400 text-xs">{{ job.rejected_count }} rejected</span>
+                        </div>
+                        {% endif %}
                     </a>
                     {% endfor %}
                 </div>
@@ -731,7 +804,7 @@
                 <div class="divide-y divide-gray-700">
                     {% for internship in my_internships %}
                     <a href="{% url 'internships:internship_detail' internship.pk %}" class="p-4 hover:bg-gray-750 transition block">
-                        <div class="flex items-center justify-between">
+                        <div class="flex items-center justify-between mb-1">
                             <div class="flex-1 min-w-0">
                                 <h3 class="font-semibold text-white truncate">{{ internship.title }}</h3>
                                 <p class="text-gray-400 text-sm">{{ internship.apps_count }} application{{ internship.apps_count|pluralize }} · {{ internship.location }}</p>
@@ -740,6 +813,13 @@
                                 {{ internship.get_status_display }}
                             </span>
                         </div>
+                        {% if internship.apps_count > 0 %}
+                        <div class="flex flex-wrap gap-2 mt-1">
+                            <span class="text-yellow-400 text-xs">{{ internship.pending_count }} pending</span>
+                            <span class="text-green-400 text-xs">{{ internship.accepted_count }} accepted</span>
+                            <span class="text-red-400 text-xs">{{ internship.rejected_count }} rejected</span>
+                        </div>
+                        {% endif %}
                     </a>
                     {% endfor %}
                 </div>

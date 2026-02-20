@@ -4,12 +4,22 @@ from django.contrib import messages
 from django.http import HttpResponseForbidden, Http404, JsonResponse
 from django.db.models import Q, Count
 from django.core.exceptions import PermissionDenied
+from django.core.paginator import Paginator
 from django.views.decorators.http import require_POST
+from django.utils import timezone
+from datetime import timedelta
 from functools import wraps
 from .models import Internship, Application, Job, JobApplication, JobBookmark, JobView, Interview
 from .forms import InternshipForm, ApplicationForm, JobForm, JobApplicationForm, InterviewForm
 from .emails import send_application_status_email, send_interview_scheduled_email
 from accounts.decorators import company_approved_required
+
+
+def _build_query_string(request):
+    """Build query string from GET params excluding 'page'."""
+    params = request.GET.copy()
+    params.pop('page', None)
+    return params.urlencode()
 
 
 def company_required(view_func):
@@ -40,7 +50,7 @@ def user_required(view_func):
 
 def internship_list(request):
     """List all open internships with search/filter"""
-    internships = Internship.objects.filter(status='open')
+    internships = Internship.objects.filter(status='open').select_related('company__company_profile')
     
     # Search
     query = request.GET.get('q', '')
@@ -49,7 +59,8 @@ def internship_list(request):
             Q(title__icontains=query) |
             Q(description__icontains=query) |
             Q(required_skills__icontains=query) |
-            Q(location__icontains=query)
+            Q(location__icontains=query) |
+            Q(company__company_profile__company_name__icontains=query)
         )
     
     # Filter by type
@@ -62,11 +73,27 @@ def internship_list(request):
     if location:
         internships = internships.filter(location__icontains=location)
     
+    # Filter by date posted
+    date_posted = request.GET.get('date_posted', '')
+    if date_posted == '24h':
+        internships = internships.filter(created_at__gte=timezone.now() - timedelta(hours=24))
+    elif date_posted == '7d':
+        internships = internships.filter(created_at__gte=timezone.now() - timedelta(days=7))
+    elif date_posted == '30d':
+        internships = internships.filter(created_at__gte=timezone.now() - timedelta(days=30))
+    
+    # Pagination
+    paginator = Paginator(internships, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
     return render(request, 'internships/internship_list.html', {
-        'internships': internships,
+        'page_obj': page_obj,
         'query': query,
         'selected_type': internship_type,
         'selected_location': location,
+        'selected_date_posted': date_posted,
+        'query_string': _build_query_string(request),
     })
 
 
@@ -158,8 +185,13 @@ def toggle_internship_status(request, pk):
 
 @company_required
 def my_internships(request):
-    """List company's own internships with application counts"""
-    internships = Internship.objects.filter(company=request.user)
+    """List company's own internships with application status breakdown"""
+    internships = Internship.objects.filter(company=request.user).annotate(
+        apps_count=Count('applications'),
+        pending_count=Count('applications', filter=Q(applications__status='pending')),
+        accepted_count=Count('applications', filter=Q(applications__status='accepted')),
+        rejected_count=Count('applications', filter=Q(applications__status='rejected')),
+    ).order_by('-created_at')
     
     return render(request, 'internships/my_internships.html', {
         'internships': internships
@@ -177,10 +209,16 @@ def view_applications(request, pk):
     if status:
         applications = applications.filter(status=status)
     
+    # Pagination
+    paginator = Paginator(applications, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
     return render(request, 'internships/view_applications.html', {
         'internship': internship,
-        'applications': applications,
+        'page_obj': page_obj,
         'selected_status': status,
+        'query_string': _build_query_string(request),
     })
 
 
@@ -288,7 +326,7 @@ def withdraw_application(request, pk):
 
 def job_list(request):
     """List all open jobs with search/filter"""
-    jobs = Job.objects.filter(status='open')
+    jobs = Job.objects.filter(status='open').select_related('company__company_profile')
     
     # Search
     query = request.GET.get('q', '')
@@ -297,7 +335,8 @@ def job_list(request):
             Q(title__icontains=query) |
             Q(description__icontains=query) |
             Q(required_skills__icontains=query) |
-            Q(location__icontains=query)
+            Q(location__icontains=query) |
+            Q(company__company_profile__company_name__icontains=query)
         )
     
     # Filter by job type
@@ -315,23 +354,64 @@ def job_list(request):
     if remote == 'yes':
         jobs = jobs.filter(is_remote=True)
     
+    # Filter by location
+    location = request.GET.get('location', '')
+    if location:
+        jobs = jobs.filter(location__icontains=location)
+    
+    # Filter by date posted
+    date_posted = request.GET.get('date_posted', '')
+    if date_posted == '24h':
+        jobs = jobs.filter(created_at__gte=timezone.now() - timedelta(hours=24))
+    elif date_posted == '7d':
+        jobs = jobs.filter(created_at__gte=timezone.now() - timedelta(days=7))
+    elif date_posted == '30d':
+        jobs = jobs.filter(created_at__gte=timezone.now() - timedelta(days=30))
+    
+    # Filter by salary range
+    salary_min = request.GET.get('salary_min', '')
+    if salary_min:
+        try:
+            jobs = jobs.filter(salary_min__gte=int(salary_min))
+        except ValueError:
+            pass
+    
+    salary_max = request.GET.get('salary_max', '')
+    if salary_max:
+        try:
+            jobs = jobs.filter(salary_max__lte=int(salary_max))
+        except ValueError:
+            pass
+    
+    # Pagination
+    paginator = Paginator(jobs, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
     return render(request, 'internships/job_list.html', {
-        'jobs': jobs,
+        'page_obj': page_obj,
         'query': query,
         'selected_type': job_type,
         'selected_experience': experience,
         'is_remote': remote,
+        'selected_location': location,
+        'selected_date_posted': date_posted,
+        'selected_salary_min': salary_min,
+        'selected_salary_max': salary_max,
+        'query_string': _build_query_string(request),
     })
 
 
 def job_detail(request, pk):
-    """View job details"""
+    """View job details with application stats for company owner"""
     job = get_object_or_404(Job, pk=pk)
     
     track_job_view(request, job)
     
     has_applied = False
     is_bookmarked = False
+    app_stats = None
+    
     if request.user.is_authenticated:
         if request.user.user_type == 'user':
             has_applied = JobApplication.objects.filter(
@@ -339,11 +419,22 @@ def job_detail(request, pk):
                 applicant=request.user
             ).exists()
         is_bookmarked = JobBookmark.objects.filter(user=request.user, job=job).exists()
+        
+        # Show application statistics to the job owner (company)
+        if request.user == job.company:
+            status_counts = job.job_applications.values('status').annotate(
+                count=Count('id')
+            )
+            app_stats = {
+                'total': sum(item['count'] for item in status_counts),
+                'breakdown': {item['status']: item['count'] for item in status_counts},
+            }
     
     return render(request, 'internships/job_detail.html', {
         'job': job,
         'has_applied': has_applied,
         'is_bookmarked': is_bookmarked,
+        'app_stats': app_stats,
     })
 
 
@@ -412,10 +503,13 @@ def toggle_job_status(request, pk):
 
 @company_required
 def my_jobs(request):
-    """List company's own jobs"""
-    from django.db.models import Count
+    """List company's own jobs with application status breakdown"""
     jobs = Job.objects.filter(company=request.user).annotate(
-        apps_count=Count('job_applications')
+        apps_count=Count('job_applications'),
+        pending_count=Count('job_applications', filter=Q(job_applications__status='pending')),
+        accepted_count=Count('job_applications', filter=Q(job_applications__status='accepted')),
+        rejected_count=Count('job_applications', filter=Q(job_applications__status='rejected')),
+        interview_count=Count('job_applications', filter=Q(job_applications__status='interview')),
     ).order_by('-created_at')
     
     return render(request, 'internships/my_jobs.html', {'jobs': jobs})
@@ -431,10 +525,16 @@ def view_job_applications(request, pk):
     if status:
         applications = applications.filter(status=status)
     
+    # Pagination
+    paginator = Paginator(applications, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
     return render(request, 'internships/view_job_applications.html', {
         'job': job,
-        'applications': applications,
+        'page_obj': page_obj,
         'selected_status': status,
+        'query_string': _build_query_string(request),
     })
 
 

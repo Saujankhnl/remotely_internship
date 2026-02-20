@@ -18,4 +18,7 @@ urlpatterns = [
 
     # Company approval
     path("company/approval/", views.company_approval_status, name="company_approval_status"),
+
+    # Admin dashboard
+    path("admin-dashboard/", views.admin_dashboard, name="admin_dashboard"),
 ]

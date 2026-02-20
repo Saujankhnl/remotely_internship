@@ -26,10 +26,18 @@
                     <div>
                         <h3 class="text-lg font-bold text-white mb-1">{{ job.title }}</h3>
                         <p class="text-gray-400 text-sm mb-2">{{ job.location }} • {{ job.get_job_type_display }}</p>
-                        <div class="flex gap-4 text-sm">
-                            <span class="text-indigo-400">{{ job.apps_count }} application{{ job.apps_count|pluralize }}</span>
+                        <div class="flex gap-4 text-sm mb-2">
+                            <span class="text-indigo-400 font-semibold">{{ job.apps_count }} application{{ job.apps_count|pluralize }}</span>
                             <span class="text-gray-500">Posted {{ job.created_at|timesince }} ago</span>
                         </div>
+                        {% if job.apps_count > 0 %}
+                        <div class="flex flex-wrap gap-3 text-xs">
+                            <span class="px-2 py-1 bg-yellow-900 text-yellow-300 rounded">Pending: {{ job.pending_count }}</span>
+                            <span class="px-2 py-1 bg-purple-900 text-purple-300 rounded">Interview: {{ job.interview_count }}</span>
+                            <span class="px-2 py-1 bg-green-900 text-green-300 rounded">Accepted: {{ job.accepted_count }}</span>
+                            <span class="px-2 py-1 bg-red-900 text-red-300 rounded">Rejected: {{ job.rejected_count }}</span>
+                        </div>
+                        {% endif %}
                     </div>
                     <div class="flex items-center gap-3">
                         <span class="px-3 py-1 rounded-full text-xs {% if job.status == 'open' %}bg-green-900 text-green-300{% else %}bg-red-900 text-red-300{% endif %}">{{ job.get_status_display }}</span>

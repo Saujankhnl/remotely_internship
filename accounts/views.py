@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import Http404
+from django.core.exceptions import PermissionDenied
 from django.contrib.auth import login, authenticate, logout
 from django.contrib import messages
 from .forms import UserRegisterForm, CompanyRegisterForm, UserProfileForm, CompanyProfileForm
@@ -158,6 +159,7 @@ def dashboard(request):
         total_applications = my_applications.count() + my_job_applications.count()
         pending_count = my_applications.filter(status='pending').count() + my_job_applications.filter(status='pending').count()
         accepted_count = my_applications.filter(status='accepted').count() + my_job_applications.filter(status='accepted').count()
+        rejected_count = my_applications.filter(status='rejected').count() + my_job_applications.filter(status='rejected').count()
         interview_count = my_job_applications.filter(status='interview').count()
         
         # Get available counts
@@ -180,6 +182,7 @@ def dashboard(request):
             'total_applications': total_applications,
             'pending_count': pending_count,
             'accepted_count': accepted_count,
+            'rejected_count': rejected_count,
             'interview_count': interview_count,
             'available_internships': available_internships,
             'available_jobs': available_jobs,
@@ -194,16 +197,23 @@ def dashboard(request):
         profile.save(update_fields=['completeness_score'])
         
         from internships.models import Internship, Application, Job, JobApplication, JobView
-        from django.db.models import Count
+        from django.db.models import Count, Q
         
-        # Get company's internships with application counts
+        # Get company's internships with application counts and status breakdown
         my_internships = Internship.objects.filter(company=user).annotate(
-            apps_count=Count('applications')
+            apps_count=Count('applications'),
+            pending_count=Count('applications', filter=Q(applications__status='pending')),
+            accepted_count=Count('applications', filter=Q(applications__status='accepted')),
+            rejected_count=Count('applications', filter=Q(applications__status='rejected')),
         ).order_by('-created_at')
         
-        # Get company's jobs with application counts
+        # Get company's jobs with application counts and status breakdown
         my_jobs = Job.objects.filter(company=user).annotate(
-            apps_count=Count('job_applications')
+            apps_count=Count('job_applications'),
+            pending_count=Count('job_applications', filter=Q(job_applications__status='pending')),
+            accepted_count=Count('job_applications', filter=Q(job_applications__status='accepted')),
+            rejected_count=Count('job_applications', filter=Q(job_applications__status='rejected')),
+            interview_count=Count('job_applications', filter=Q(job_applications__status='interview')),
         ).order_by('-created_at')
         
         # Calculate stats
@@ -217,10 +227,27 @@ def dashboard(request):
         job_applications = JobApplication.objects.filter(job__company=user).count()
         total_applications = internship_applications + job_applications
         
+        # Application status counts across all postings
         pending_applications = Application.objects.filter(
             internship__company=user, status='pending'
         ).count() + JobApplication.objects.filter(
             job__company=user, status='pending'
+        ).count()
+        
+        accepted_applications = Application.objects.filter(
+            internship__company=user, status='accepted'
+        ).count() + JobApplication.objects.filter(
+            job__company=user, status='accepted'
+        ).count()
+        
+        rejected_applications = Application.objects.filter(
+            internship__company=user, status='rejected'
+        ).count() + JobApplication.objects.filter(
+            job__company=user, status='rejected'
+        ).count()
+        
+        interview_applications = JobApplication.objects.filter(
+            job__company=user, status='interview'
         ).count()
         
         # Total views
@@ -229,12 +256,12 @@ def dashboard(request):
         # Recent internship applications
         recent_internship_apps = Application.objects.filter(
             internship__company=user
-        ).select_related('internship', 'applicant').order_by('-applied_at')[:3]
+        ).select_related('internship', 'applicant').order_by('-applied_at')[:5]
         
         # Recent job applications
         recent_job_apps = JobApplication.objects.filter(
             job__company=user
-        ).select_related('job', 'applicant').order_by('-applied_at')[:3]
+        ).select_related('job', 'applicant').order_by('-applied_at')[:5]
         
         context.update({
             'profile': profile,
@@ -246,6 +273,9 @@ def dashboard(request):
             'active_posts': active_posts,
             'total_applications': total_applications,
             'pending_applications': pending_applications,
+            'accepted_applications': accepted_applications,
+            'rejected_applications': rejected_applications,
+            'interview_applications': interview_applications,
             'total_views': total_views,
             'recent_internship_apps': recent_internship_apps,
             'recent_job_apps': recent_job_apps,
@@ -453,3 +483,94 @@ def company_approval_status(request):
         'profile': profile,
         'user_type': 'company',
     })
+
+
+@login_required
+def admin_dashboard(request):
+    """Custom admin dashboard - only accessible by staff/superusers"""
+    if not request.user.is_staff:
+        raise PermissionDenied("Only administrators can access this page.")
+
+    from internships.models import Job, Internship, JobApplication, Application
+    from .models import CustomUser, CompanyProfile
+    from django.db.models import Count
+
+    # Summary statistics
+    total_users = CustomUser.objects.filter(user_type='user').count()
+    total_companies = CustomUser.objects.filter(user_type='company').count()
+    total_jobs = Job.objects.count()
+    total_internships = Internship.objects.count()
+    total_job_applications = JobApplication.objects.count()
+    total_internship_applications = Application.objects.count()
+    total_applications = total_job_applications + total_internship_applications
+
+    # Active/Open counts
+    active_jobs = Job.objects.filter(status='open').count()
+    active_internships = Internship.objects.filter(status='open').count()
+
+    # Pending company approvals
+    pending_companies = CompanyProfile.objects.filter(approval_status='pending').count()
+
+    # Recent 5 job posts
+    recent_jobs = Job.objects.select_related(
+        'company__company_profile'
+    ).order_by('-created_at')[:5]
+
+    # Recent 5 internship posts
+    recent_internships = Internship.objects.select_related(
+        'company__company_profile'
+    ).order_by('-created_at')[:5]
+
+    # Recent 5 job applications
+    recent_job_apps = JobApplication.objects.select_related(
+        'job', 'applicant'
+    ).order_by('-applied_at')[:5]
+
+    # Recent 5 internship applications
+    recent_intern_apps = Application.objects.select_related(
+        'internship', 'applicant'
+    ).order_by('-applied_at')[:5]
+
+    # Graph-ready data: applications per status (for future charts)
+    job_apps_by_status = dict(
+        JobApplication.objects.values_list('status').annotate(count=Count('id')).order_by('status')
+    )
+    intern_apps_by_status = dict(
+        Application.objects.values_list('status').annotate(count=Count('id')).order_by('status')
+    )
+
+    # Graph-ready data: jobs posted per month (last 6 months)
+    from django.db.models.functions import TruncMonth
+    from django.utils import timezone
+    from datetime import timedelta
+
+    six_months_ago = timezone.now() - timedelta(days=180)
+    jobs_per_month = list(
+        Job.objects.filter(created_at__gte=six_months_ago)
+        .annotate(month=TruncMonth('created_at'))
+        .values('month')
+        .annotate(count=Count('id'))
+        .order_by('month')
+    )
+
+    context = {
+        'total_users': total_users,
+        'total_companies': total_companies,
+        'total_jobs': total_jobs,
+        'total_internships': total_internships,
+        'total_applications': total_applications,
+        'total_job_applications': total_job_applications,
+        'total_internship_applications': total_internship_applications,
+        'active_jobs': active_jobs,
+        'active_internships': active_internships,
+        'pending_companies': pending_companies,
+        'recent_jobs': recent_jobs,
+        'recent_internships': recent_internships,
+        'recent_job_apps': recent_job_apps,
+        'recent_intern_apps': recent_intern_apps,
+        'job_apps_by_status': job_apps_by_status,
+        'intern_apps_by_status': intern_apps_by_status,
+        'jobs_per_month': jobs_per_month,
+    }
+
+    return render(request, 'accounts/admin_dashboard.html', context)

@@ -107,6 +107,30 @@
                     </a>
                 </div>
 
+                {% if app_stats %}
+                <div class="bg-gray-800 border border-gray-700 rounded-2xl p-6">
+                    <h3 class="text-lg font-bold text-white mb-4">Application Statistics</h3>
+                    <p class="text-2xl font-bold text-indigo-400 mb-4">{{ app_stats.total }} Total</p>
+                    <div class="space-y-2">
+                        {% for status, count in app_stats.breakdown.items %}
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-400 text-sm capitalize">{{ status }}</span>
+                            <span class="px-2 py-1 text-xs rounded
+                                {% if status == 'pending' %}bg-yellow-900 text-yellow-300
+                                {% elif status == 'accepted' %}bg-green-900 text-green-300
+                                {% elif status == 'rejected' %}bg-red-900 text-red-300
+                                {% elif status == 'interview' %}bg-purple-900 text-purple-300
+                                {% elif status == 'shortlisted' %}bg-blue-900 text-blue-300
+                                {% else %}bg-gray-600 text-gray-300{% endif %}">
+                                {{ count }}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <a href="{% url 'internships:view_job_applications' job.pk %}" class="block mt-4 text-center text-indigo-400 hover:text-indigo-300 text-sm">View All Applications →</a>
+                </div>
+                {% endif %}
+
                 {% if job.deadline %}
                 <div class="bg-gray-800 border border-gray-700 rounded-2xl p-6">
                     <h3 class="text-lg font-bold text-white mb-2">Application Deadline</h3>
