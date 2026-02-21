@@ -14,7 +14,7 @@
             </a>
             <div class="flex items-center gap-4">
                 {% if user.is_authenticated %}
-                <button onclick="toggleBookmark()" id="bookmark-btn" class="{% if is_bookmarked %}text-yellow-400{% else %}text-gray-400{% endif %} hover:text-yellow-300">
+                <button id="bookmark-btn" data-url="{% url 'internships:toggle_job_bookmark' job.pk %}" class="{% if is_bookmarked %}text-yellow-400{% else %}text-gray-400{% endif %} hover:text-yellow-300">
                     <svg class="w-6 h-6" fill="{% if is_bookmarked %}currentColor{% else %}none{% endif %}" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
                     </svg>
@@ -144,24 +144,6 @@
     </main>
 </div>
 
-<script>
-function toggleBookmark() {
-    fetch("{% url 'internships:toggle_job_bookmark' job.pk %}", {
-        method: 'POST',
-        headers: {'X-CSRFToken': '{{ csrf_token }}'}
-    }).then(r => r.json()).then(data => {
-        const btn = document.getElementById('bookmark-btn');
-        const svg = btn.querySelector('svg');
-        if (data.bookmarked) {
-            btn.classList.remove('text-gray-400');
-            btn.classList.add('text-yellow-400');
-            svg.setAttribute('fill', 'currentColor');
-        } else {
-            btn.classList.remove('text-yellow-400');
-            btn.classList.add('text-gray-400');
-            svg.setAttribute('fill', 'none');
-        }
-    });
-}
-</script>
+<meta name="csrf-token" content="{{ csrf_token }}">
+<script type="module" src="{% static 'internships/js/bookmark.js' %}"></script>
 {% endblock %}

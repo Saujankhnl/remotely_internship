@@ -124,14 +124,5 @@
     </form>
 </div>
 
-<script>
-    document.getElementById('id_cv').addEventListener('change', function(e) {
-        const fileName = e.target.files[0]?.name || 'Click to upload your CV';
-        document.getElementById('cvFileName').textContent = fileName;
-        if (e.target.files[0]) {
-            document.getElementById('cvUploadArea').classList.add('border-green-500');
-            document.getElementById('cvUploadArea').classList.remove('border-gray-600');
-        }
-    });
-</script>
+<script type="module" src="{% static 'internships/js/file-upload.js' %}"></script>
 {% endblock %}

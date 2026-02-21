@@ -19,7 +19,7 @@
         <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {% for bookmark in bookmarks %}
             <div class="bg-gray-800 border border-gray-700 rounded-2xl p-5 relative">
-                <button onclick="removeBookmark({{ bookmark.job.pk }})" class="absolute top-4 right-4 text-yellow-400 hover:text-yellow-300">
+                <button data-remove-bookmark="{% url 'internships:toggle_job_bookmark' bookmark.job.pk %}" class="absolute top-4 right-4 text-yellow-400 hover:text-yellow-300">
                     <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path></svg>
                 </button>
                 <a href="{% url 'internships:job_detail' bookmark.job.pk %}">
@@ -42,14 +42,7 @@
     </main>
 </div>
 
-<script>
-function removeBookmark(jobId) {
-    fetch(`/job/${jobId}/bookmark/`, {
-        method: 'POST',
-        headers: {'X-CSRFToken': '{{ csrf_token }}'}
-    }).then(r => r.json()).then(data => {
-        if (!data.bookmarked) location.reload();
-    });
-}
-</script>
+{% load static %}
+<meta name="csrf-token" content="{{ csrf_token }}">
+<script type="module" src="{% static 'internships/js/bookmark.js' %}"></script>
 {% endblock %}
