@@ -104,16 +104,21 @@ A full-stack internship platform built with Django where companies can post inte
 ## 📊 Dashboard Features
 
 ### Company Dashboard
-- Total Posts count
-- Total Applications received
+- Total Posts count (jobs + internships)
+- Total Applications received and status breakdown
 - Pending applications to review
+- Total profile views and unread chat/notification alerts
 - List of internships with application counts
-- Quick actions: Post new, View applicants
+- Quick actions: Post new, View applicants, view analytics, check messages/alerts
 
 ### Student Dashboard
-- Total applications sent
-- Pending/Accepted/Rejected counts
-- Available internships to browse
+- Total applications sent (jobs + internships)
+- Pending/Accepted/Rejected counts plus interview requests
+- Available internships and jobs to browse
+- Saved jobs count
+- Resumes created and quick resume builder
+- Badges earned from assessments and link to skill tests
+- Unread notifications and chat messages
 - Recent applications with status
 
 ---

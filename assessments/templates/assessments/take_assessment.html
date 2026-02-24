@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% block title %}<title>{{ attempt.assessment.skill_name }} - Assessment - Remotely</title>{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <!-- Navigation with Timer -->
+    <nav class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div>
+                <h1 class="text-lg font-bold text-white">{{ attempt.assessment.skill_name }}</h1>
+                <p class="text-gray-400 text-xs">{{ attempt.total_questions }} questions</p>
+            </div>
+            <div id="timer" data-time-remaining="{{ time_remaining }}" class="flex items-center gap-2 px-4 py-2 bg-gray-700 rounded-xl">
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span id="timerDisplay" class="text-white font-mono font-bold text-lg">--:--</span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-4xl mx-auto px-4 py-8">
+        <form method="post" id="assessmentForm">
+            {% csrf_token %}
+
+            {% for answer in answers %}
+            <div class="bg-gray-800 border border-gray-700 rounded-2xl p-6 mb-4">
+                <div class="flex items-start gap-3 mb-4">
+                    <span class="flex-shrink-0 w-8 h-8 bg-indigo-600 text-white rounded-lg flex items-center justify-center text-sm font-bold">{{ forloop.counter }}</span>
+                    <p class="text-white text-base leading-relaxed">{{ answer.question.question_text }}</p>
+                </div>
+
+                <div class="space-y-2 ml-11">
+                    {% with qid=answer.question.id %}
+                    <label class="flex items-center gap-3 p-3 rounded-xl border border-gray-700 hover:border-indigo-500 hover:bg-gray-700/50 cursor-pointer transition duration-150">
+                        <input type="radio" name="question_{{ qid }}" value="A" class="w-4 h-4 text-indigo-600 bg-gray-700 border-gray-600 focus:ring-indigo-500">
+                        <span class="text-gray-300 text-sm"><span class="font-semibold text-gray-400 mr-1">A.</span> {{ answer.question.option_a }}</span>
+                    </label>
+                    <label class="flex items-center gap-3 p-3 rounded-xl border border-gray-700 hover:border-indigo-500 hover:bg-gray-700/50 cursor-pointer transition duration-150">
+                        <input type="radio" name="question_{{ qid }}" value="B" class="w-4 h-4 text-indigo-600 bg-gray-700 border-gray-600 focus:ring-indigo-500">
+                        <span class="text-gray-300 text-sm"><span class="font-semibold text-gray-400 mr-1">B.</span> {{ answer.question.option_b }}</span>
+                    </label>
+                    <label class="flex items-center gap-3 p-3 rounded-xl border border-gray-700 hover:border-indigo-500 hover:bg-gray-700/50 cursor-pointer transition duration-150">
+                        <input type="radio" name="question_{{ qid }}" value="C" class="w-4 h-4 text-indigo-600 bg-gray-700 border-gray-600 focus:ring-indigo-500">
+                        <span class="text-gray-300 text-sm"><span class="font-semibold text-gray-400 mr-1">C.</span> {{ answer.question.option_c }}</span>
+                    </label>
+                    <label class="flex items-center gap-3 p-3 rounded-xl border border-gray-700 hover:border-indigo-500 hover:bg-gray-700/50 cursor-pointer transition duration-150">
+                        <input type="radio" name="question_{{ qid }}" value="D" class="w-4 h-4 text-indigo-600 bg-gray-700 border-gray-600 focus:ring-indigo-500">
+                        <span class="text-gray-300 text-sm"><span class="font-semibold text-gray-400 mr-1">D.</span> {{ answer.question.option_d }}</span>
+                    </label>
+                    {% endwith %}
+                </div>
+            </div>
+            {% endfor %}
+
+            <!-- Submit -->
+            <div class="sticky bottom-0 bg-gray-900/95 backdrop-blur border-t border-gray-700 -mx-4 px-4 py-4 mt-6">
+                <div class="max-w-4xl mx-auto flex items-center justify-between">
+                    <p class="text-gray-400 text-sm">Make sure to answer all questions before submitting.</p>
+                    <button type="submit" id="submitBtn"
+                            class="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition duration-200">
+                        Submit Assessment
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% load static %}
+<script src="{% static 'assessments/js/assessment-timer.js' %}"></script>
+{% endblock %}

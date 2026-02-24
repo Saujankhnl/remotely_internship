@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+{% block title %}<title>Ranked Applicants - {{ job.title }} - Remotely</title>{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <nav class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <a href="{% url 'internships:view_job_applications' job.pk %}" class="flex items-center gap-2 text-gray-300 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                All Applications
+            </a>
+            <span class="text-xl font-bold text-white">Remotely</span>
+            <a href="{% url 'accounts:dashboard' %}" class="text-gray-300 hover:text-white text-sm">Dashboard</a>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 py-6">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-2xl font-bold text-white mb-1">{{ job.title }}</h1>
+            <p class="text-indigo-400 text-lg font-semibold">Ranked Applicants — ATS Match Scoring</p>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+            <div class="bg-gray-800 border border-gray-700 rounded-xl p-5 text-center">
+                <p class="text-3xl font-bold text-white">{{ total_applicants }}</p>
+                <p class="text-gray-400 text-sm mt-1">Total Applicants</p>
+            </div>
+            <div class="bg-gray-800 border border-gray-700 rounded-xl p-5 text-center">
+                {% if ranked_applicants %}
+                {% widthratio ranked_applicants.0.final_score 1 1 as top_score %}
+                <p class="text-3xl font-bold text-green-400">{{ ranked_applicants.0.final_score }}%</p>
+                <p class="text-gray-400 text-sm mt-1">Top Match Score</p>
+                {% else %}
+                <p class="text-3xl font-bold text-gray-500">—</p>
+                <p class="text-gray-400 text-sm mt-1">Top Match Score</p>
+                {% endif %}
+            </div>
+            <div class="bg-gray-800 border border-gray-700 rounded-xl p-5 text-center">
+                <p class="text-3xl font-bold text-indigo-400">
+                    {% if ranked_applicants %}
+                    {% with total=0 %}
+                    {% for r in ranked_applicants %}{% endfor %}
+                    {% endwith %}
+                    {{ job.get_skills_list|length }}
+                    {% else %}0{% endif %}
+                </p>
+                <p class="text-gray-400 text-sm mt-1">Required Skills</p>
+            </div>
+        </div>
+
+        <!-- Required Skills -->
+        <div class="bg-gray-800 border border-gray-700 rounded-xl p-5 mb-8">
+            <h3 class="text-white font-semibold mb-3">Required Skills for this Position</h3>
+            <div class="flex flex-wrap gap-2">
+                {% for skill in job.get_skills_list %}
+                <span class="px-3 py-1 bg-indigo-900/50 text-indigo-300 rounded-full text-xs font-medium">{{ skill }}</span>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Ranked Applicants -->
+        <div class="space-y-4">
+            {% for r in ranked_applicants %}
+            <div class="bg-gray-800 border border-gray-700 rounded-xl p-6 {% if r.is_top %}border-yellow-500/50 ring-1 ring-yellow-500/30{% endif %} hover:border-gray-600 transition">
+                <div class="flex flex-col lg:flex-row lg:items-start gap-6">
+                    <!-- Rank & Score -->
+                    <div class="flex items-center gap-4 lg:flex-col lg:items-center lg:min-w-[80px]">
+                        <div class="text-center">
+                            {% if r.is_top %}
+                            <div class="text-yellow-400 mb-1">
+                                <svg class="w-6 h-6 mx-auto" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                            </div>
+                            {% endif %}
+                            <span class="text-gray-500 text-sm font-medium">#{{ forloop.counter }}</span>
+                        </div>
+                        <div class="w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold
+                            {% if r.final_score >= 70 %}bg-green-900/50 text-green-400 ring-2 ring-green-500/30
+                            {% elif r.final_score >= 40 %}bg-yellow-900/50 text-yellow-400 ring-2 ring-yellow-500/30
+                            {% else %}bg-red-900/50 text-red-400 ring-2 ring-red-500/30{% endif %}">
+                            {{ r.final_score }}
+                        </div>
+                    </div>
+
+                    <!-- Applicant Info -->
+                    <div class="flex-1">
+                        <div class="flex flex-wrap items-center gap-3 mb-3">
+                            <h3 class="text-lg font-bold text-white">{{ r.application.full_name }}</h3>
+                            {% if r.is_top %}
+                            <span class="px-2.5 py-0.5 bg-yellow-900/50 text-yellow-300 rounded-full text-xs font-semibold flex items-center gap-1">
+                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                                Top Candidate
+                            </span>
+                            {% endif %}
+                            <span class="px-2.5 py-0.5 rounded-full text-xs
+                                {% if r.application.status == 'pending' %}bg-gray-600 text-gray-300
+                                {% elif r.application.status == 'reviewed' %}bg-blue-900 text-blue-300
+                                {% elif r.application.status == 'shortlisted' %}bg-yellow-900 text-yellow-300
+                                {% elif r.application.status == 'interview' %}bg-purple-900 text-purple-300
+                                {% elif r.application.status == 'accepted' %}bg-green-900 text-green-300
+                                {% elif r.application.status == 'rejected' %}bg-red-900 text-red-300{% endif %}">
+                                {{ r.application.get_status_display }}
+                            </span>
+                        </div>
+                        <p class="text-gray-400 text-sm mb-4">{{ r.application.email }} · {{ r.application.years_of_experience }} years experience · Applied {{ r.application.applied_at|timesince }} ago</p>
+
+                        <!-- Score Breakdown -->
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                            <!-- Skill Match -->
+                            <div>
+                                <div class="flex justify-between text-xs mb-1">
+                                    <span class="text-gray-400">Skill Match</span>
+                                    <span class="text-white font-semibold">{{ r.skill_match }}%</span>
+                                </div>
+                                <div class="w-full bg-gray-700 rounded-full h-2">
+                                    <div class="h-2 rounded-full {% if r.skill_match >= 70 %}bg-green-500{% elif r.skill_match >= 40 %}bg-yellow-500{% else %}bg-red-500{% endif %}" style="width: {{ r.skill_match }}%"></div>
+                                </div>
+                                <span class="text-gray-500 text-xs">50% weight</span>
+                            </div>
+                            <!-- Experience -->
+                            <div>
+                                <div class="flex justify-between text-xs mb-1">
+                                    <span class="text-gray-400">Experience</span>
+                                    <span class="text-white font-semibold">{{ r.experience_score }}%</span>
+                                </div>
+                                <div class="w-full bg-gray-700 rounded-full h-2">
+                                    <div class="h-2 rounded-full {% if r.experience_score >= 70 %}bg-green-500{% elif r.experience_score >= 40 %}bg-yellow-500{% else %}bg-red-500{% endif %}" style="width: {{ r.experience_score }}%"></div>
+                                </div>
+                                <span class="text-gray-500 text-xs">20% weight</span>
+                            </div>
+                            <!-- Profile -->
+                            <div>
+                                <div class="flex justify-between text-xs mb-1">
+                                    <span class="text-gray-400">Profile</span>
+                                    <span class="text-white font-semibold">{{ r.profile_score }}%</span>
+                                </div>
+                                <div class="w-full bg-gray-700 rounded-full h-2">
+                                    <div class="h-2 rounded-full {% if r.profile_score >= 70 %}bg-green-500{% elif r.profile_score >= 40 %}bg-yellow-500{% else %}bg-red-500{% endif %}" style="width: {{ r.profile_score }}%"></div>
+                                </div>
+                                <span class="text-gray-500 text-xs">10% weight</span>
+                            </div>
+                            <!-- Assessment -->
+                            <div>
+                                <div class="flex justify-between text-xs mb-1">
+                                    <span class="text-gray-400">Assessment</span>
+                                    <span class="text-white font-semibold">{{ r.assessment_score }}%</span>
+                                </div>
+                                <div class="w-full bg-gray-700 rounded-full h-2">
+                                    <div class="h-2 rounded-full {% if r.assessment_score >= 70 %}bg-green-500{% elif r.assessment_score >= 40 %}bg-yellow-500{% else %}bg-red-500{% endif %}" style="width: {{ r.assessment_score }}%"></div>
+                                </div>
+                                <span class="text-gray-500 text-xs">20% weight</span>
+                            </div>
+                        </div>
+
+                        <!-- Skills Tags -->
+                        <div class="flex flex-wrap gap-2 mb-3">
+                            {% for skill in r.matching_skills %}
+                            <span class="px-2 py-0.5 bg-green-900/40 text-green-300 rounded text-xs font-medium">✓ {{ skill }}</span>
+                            {% endfor %}
+                            {% for skill in r.missing_skills %}
+                            <span class="px-2 py-0.5 bg-gray-700 text-gray-400 rounded text-xs">✗ {{ skill }}</span>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Action -->
+                        <a href="{% url 'internships:job_application_detail' r.application.pk %}" class="inline-flex items-center gap-1 text-indigo-400 hover:text-indigo-300 text-sm font-medium">
+                            View Full Application
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center py-16">
+                <svg class="w-16 h-16 text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                <h3 class="text-xl font-semibold text-gray-400 mb-2">No applicants yet</h3>
+                <p class="text-gray-500">When candidates apply, they'll be ranked here by ATS match score.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+</div>
+{% endblock %}

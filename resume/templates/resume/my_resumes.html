@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% block title %}<title>My Resumes - Remotely</title>{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <nav class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <a href="{% url 'resume:resume_builder' %}" class="flex items-center gap-2 text-gray-300 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                Resume Builder
+            </a>
+            <span class="text-xl font-bold text-white">Remotely</span>
+            <a href="{% url 'accounts:dashboard' %}" class="text-gray-300 hover:text-white text-sm">Dashboard</a>
+        </div>
+    </nav>
+
+    <main class="max-w-4xl mx-auto px-4 py-8">
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-2xl font-bold text-white">My Resumes</h1>
+                <p class="text-gray-400 mt-1">{{ resumes|length }} resume{{ resumes|length|pluralize }} generated</p>
+            </div>
+            <a href="{% url 'resume:resume_builder' %}" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold text-sm transition flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                Create New
+            </a>
+        </div>
+
+        <div class="grid gap-4">
+            {% for resume in resumes %}
+            <div class="bg-gray-800 border border-gray-700 rounded-xl p-5 flex items-center justify-between hover:border-gray-600 transition">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-lg flex items-center justify-center
+                        {% if resume.template_name == 'professional' %}bg-indigo-600
+                        {% elif resume.template_name == 'modern' %}bg-purple-600
+                        {% else %}bg-gray-600{% endif %}">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-white font-semibold">{{ resume.get_template_name_display }} Resume</h3>
+                        <p class="text-gray-400 text-sm">Generated {{ resume.created_at|timesince }} ago</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    {% if resume.file %}
+                    <a href="{{ resume.file.url }}" download class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm transition flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        Download
+                    </a>
+                    {% endif %}
+                    <form method="post" action="{% url 'resume:delete_resume' resume.pk %}" onsubmit="return confirm('Delete this resume?')">
+                        {% csrf_token %}
+                        <button type="submit" class="px-3 py-2 bg-red-900/50 hover:bg-red-800 text-red-300 rounded-lg text-sm transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center py-16">
+                <svg class="w-16 h-16 text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                <h3 class="text-xl font-semibold text-gray-400 mb-2">No resumes generated yet</h3>
+                <p class="text-gray-500 mb-6">Create your first professional resume in seconds.</p>
+                <a href="{% url 'resume:resume_builder' %}" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition">
+                    Build Your Resume
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+</div>
+{% endblock %}

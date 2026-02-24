@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views
+from . import views, social_views
 
 app_name = 'accounts'
 urlpatterns = [
@@ -21,4 +21,7 @@ urlpatterns = [
 
     # Admin dashboard
     path("admin-dashboard/", views.admin_dashboard, name="admin_dashboard"),
+
+    # Social login
+    path("select-role/", social_views.select_role, name="select_role"),
 ]

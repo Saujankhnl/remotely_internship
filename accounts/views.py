@@ -169,6 +169,23 @@ def dashboard(request):
         # Get saved jobs count
         saved_jobs_count = JobBookmark.objects.filter(user=user).count()
         
+        # New features: notifications, resumes, assessments, unread chats
+        from notifications.models import Notification
+        from resume.models import GeneratedResume
+        from assessments.models import VerifiedBadge, SkillAssessment
+        from chat.models import Message
+
+        unread_notifications = Notification.objects.filter(user=user, is_read=False).count()
+        resume_count = GeneratedResume.objects.filter(user=user).count()
+        badges_count = VerifiedBadge.objects.filter(user=user).count()
+        # number of active assessments available to take
+        available_assessments = SkillAssessment.objects.filter(is_active=True).count()
+        # unread messages in chats where the user is the applicant
+        unread_chats = Message.objects.filter(
+            room__application__applicant=user,
+            is_read=False
+        ).count()
+        
         # Get upcoming interviews
         upcoming_interviews = Interview.objects.filter(
             application__applicant=user,
@@ -188,6 +205,12 @@ def dashboard(request):
             'available_jobs': available_jobs,
             'saved_jobs_count': saved_jobs_count,
             'upcoming_interviews': upcoming_interviews,
+            # extras
+            'unread_notifications': unread_notifications,
+            'resume_count': resume_count,
+            'badges_count': badges_count,
+            'available_assessments': available_assessments,
+            'unread_chats': unread_chats,
         })
         
     else:
@@ -263,6 +286,16 @@ def dashboard(request):
             job__company=user
         ).select_related('job', 'applicant').order_by('-applied_at')[:5]
         
+        # New company-specific features: notifications and unread chat messages
+        from notifications.models import Notification
+        from chat.models import Message
+
+        unread_notifications = Notification.objects.filter(user=user, is_read=False).count()
+        unread_chats = Message.objects.filter(
+            room__application__job__company=user,
+            is_read=False
+        ).count()
+        
         context.update({
             'profile': profile,
             'my_internships': my_internships[:5],
@@ -279,6 +312,8 @@ def dashboard(request):
             'total_views': total_views,
             'recent_internship_apps': recent_internship_apps,
             'recent_job_apps': recent_job_apps,
+            'unread_notifications': unread_notifications,
+            'unread_chats': unread_chats,
         })
     
     return render(request, 'accounts/dashboard.html', context)

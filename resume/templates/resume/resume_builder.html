@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+{% block title %}<title>Resume Builder - Remotely</title>{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <nav class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <a href="{% url 'accounts:dashboard' %}" class="flex items-center gap-2 text-gray-300 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                Dashboard
+            </a>
+            <span class="text-xl font-bold text-white">Remotely</span>
+            <a href="{% url 'resume:my_resumes' %}" class="text-gray-300 hover:text-white text-sm">My Resumes</a>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-white mb-2">Resume Builder</h1>
+            <p class="text-gray-400">Select a template and generate a professional PDF resume from your profile data.</p>
+        </div>
+
+        {% if not profile_complete %}
+        <div class="bg-yellow-900/40 border border-yellow-700 rounded-xl p-4 mb-6 flex items-start gap-3">
+            <svg class="w-6 h-6 text-yellow-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path></svg>
+            <div>
+                <h3 class="text-yellow-300 font-semibold">Incomplete Profile</h3>
+                <p class="text-yellow-200 text-sm mt-1">Your profile is less than 50% complete. For a better resume, please
+                    <a href="{% url 'accounts:edit_profile' %}" class="underline hover:text-yellow-100">complete your profile</a> first.
+                </p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Template Selection -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-white mb-4">Choose a Template</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Professional -->
+                <label class="cursor-pointer">
+                    <input type="radio" name="template" value="professional" class="hidden peer" checked>
+                    <div class="bg-gray-800 border-2 border-gray-700 peer-checked:border-indigo-500 rounded-xl p-6 transition hover:border-gray-500">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            </div>
+                            <div>
+                                <h3 class="text-white font-bold">Professional</h3>
+                                <p class="text-gray-400 text-xs">Classic & traditional</p>
+                            </div>
+                        </div>
+                        <p class="text-gray-400 text-sm">Traditional resume layout with clean typography. Best for corporate and formal positions.</p>
+                    </div>
+                </label>
+
+                <!-- Modern -->
+                <label class="cursor-pointer">
+                    <input type="radio" name="template" value="modern" class="hidden peer">
+                    <div class="bg-gray-800 border-2 border-gray-700 peer-checked:border-indigo-500 rounded-xl p-6 transition hover:border-gray-500">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path></svg>
+                            </div>
+                            <div>
+                                <h3 class="text-white font-bold">Modern</h3>
+                                <p class="text-gray-400 text-xs">Bold & colorful</p>
+                            </div>
+                        </div>
+                        <p class="text-gray-400 text-sm">Modern design with indigo accents and contemporary styling. Great for tech and creative roles.</p>
+                    </div>
+                </label>
+
+                <!-- Minimal -->
+                <label class="cursor-pointer">
+                    <input type="radio" name="template" value="minimal" class="hidden peer">
+                    <div class="bg-gray-800 border-2 border-gray-700 peer-checked:border-indigo-500 rounded-xl p-6 transition hover:border-gray-500">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-10 h-10 bg-gray-600 rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path></svg>
+                            </div>
+                            <div>
+                                <h3 class="text-white font-bold">Minimal</h3>
+                                <p class="text-gray-400 text-xs">Clean & simple</p>
+                            </div>
+                        </div>
+                        <p class="text-gray-400 text-sm">Minimalist design with clean lines and maximum readability. Perfect for any industry.</p>
+                    </div>
+                </label>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex flex-wrap gap-4 mb-8">
+            <button id="previewBtn" class="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-semibold transition flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                Preview
+            </button>
+            <form method="post" action="{% url 'resume:generate_pdf' %}" id="downloadForm">
+                {% csrf_token %}
+                <input type="hidden" name="template_name" id="downloadTemplate" value="professional">
+                <button type="submit" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    Download PDF
+                </button>
+            </form>
+        </div>
+
+        <!-- Preview Area -->
+        <div class="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
+            <div class="bg-gray-750 border-b border-gray-700 px-4 py-3 flex items-center justify-between">
+                <span class="text-gray-300 font-semibold text-sm">Resume Preview</span>
+                <span id="templateLabel" class="text-indigo-400 text-sm">Professional Template</span>
+            </div>
+            <div class="p-2" style="min-height: 600px;">
+                <iframe id="previewFrame" class="w-full rounded-lg bg-white" style="min-height: 600px; border: none;"
+                    src="{% url 'resume:resume_preview' 'professional' %}"
+                    data-preview-url="{% url 'resume:resume_preview' 'PLACEHOLDER' %}"></iframe>
+            </div>
+        </div>
+    </main>
+</div>
+
+{% load static %}
+<script src="{% static 'resume/js/resume-builder.js' %}"></script>
+{% endblock %}

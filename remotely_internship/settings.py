@@ -32,17 +32,37 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    # 'daphne' is only required when running under ASGI or using channels.
+    # It was causing ModuleNotFoundError in environments where it's not installed.
+    # Install daphne or uncomment the line below if you enable channels/ASGI support.
+    # 'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
     "tailwind",
     'theme',
+    # Local apps
     "accounts",
     "internships",
+    "chat",
+    "notifications",
+    "resume",
+    "assessments",
+    # Third-party
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    # Google provider requires PyJWT (provides 'jwt' module). 
+    # Remove or install PyJWT if you want Google login.
+    # 'allauth.socialaccount.providers.google',
+    'allauth.socialaccount.providers.linkedin_oauth2',
 ]
+
+SITE_ID = 1
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -52,6 +72,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
 ]
 
 ROOT_URLCONF = 'remotely_internship.urls'
@@ -66,6 +87,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'notifications.context_processors.notification_count',
             ],
         },
     },
@@ -144,3 +166,65 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # For developm
 # EMAIL_USE_TLS = True
 # EMAIL_HOST_USER = 'apikey'
 # EMAIL_HOST_PASSWORD = SENDGRID_API_KEY
+
+
+# ==================== DJANGO CHANNELS ====================
+ASGI_APPLICATION = 'remotely_internship.asgi.application'
+
+# Channel layer - InMemory for development
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    }
+}
+# For production, use Redis:
+# CHANNEL_LAYERS = {
+#     'default': {
+#         'BACKEND': 'channels_redis.core.RedisChannelLayer',
+#         'CONFIG': {
+#             'hosts': [('127.0.0.1', 6379)],
+#         },
+#     }
+# }
+
+
+# ==================== DJANGO ALLAUTH ====================
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+
+ACCOUNT_LOGIN_METHODS = {'email', 'username'}
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
+ACCOUNT_EMAIL_VERIFICATION = 'optional'
+ACCOUNT_SIGNUP_REDIRECT_URL = '/select-role/'
+LOGIN_REDIRECT_URL = '/dashboard/'
+
+ACCOUNT_ADAPTER = 'accounts.adapters.CustomAccountAdapter'
+SOCIALACCOUNT_ADAPTER = 'accounts.adapters.CustomSocialAccountAdapter'
+SOCIALACCOUNT_AUTO_SIGNUP = True
+SOCIALACCOUNT_LOGIN_ON_GET = True
+
+# Social provider configuration (set these via environment variables)
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': ['profile', 'email'],
+        'AUTH_PARAMS': {'access_type': 'online'},
+        'APP': {
+            'client_id': os.environ.get('GOOGLE_CLIENT_ID', ''),
+            'secret': os.environ.get('GOOGLE_CLIENT_SECRET', ''),
+        },
+    },
+    'linkedin_oauth2': {
+        'SCOPE': ['openid', 'profile', 'email'],
+        'PROFILE_FIELDS': ['id', 'first-name', 'last-name', 'email-address'],
+        'APP': {
+            'client_id': os.environ.get('LINKEDIN_CLIENT_ID', ''),
+            'secret': os.environ.get('LINKEDIN_CLIENT_SECRET', ''),
+        },
+    },
+}
+
+
+# ==================== DEFAULT PRIMARY KEY ====================
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

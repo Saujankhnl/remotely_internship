@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+{% block title %}<title>Assessment Result - Remotely</title>{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <!-- Navigation Bar -->
+    <nav class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <a href="{% url 'accounts:dashboard' %}" class="text-xl sm:text-2xl font-bold text-white">Remotely</a>
+            <div class="flex items-center gap-4">
+                <a href="{% url 'accounts:dashboard' %}" class="text-gray-400 hover:text-white text-sm">Dashboard</a>
+                <a href="{% url 'assessments:assessment_list' %}" class="text-gray-400 hover:text-white text-sm">Assessments</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-3xl mx-auto px-4 py-8">
+        <!-- Score Summary -->
+        <div class="bg-gray-800 border border-gray-700 rounded-2xl p-6 mb-6 text-center">
+            <h1 class="text-2xl font-bold text-white mb-2">{{ attempt.assessment.skill_name }}</h1>
+            <p class="text-gray-400 text-sm mb-6">Assessment completed on {{ attempt.completed_at|date:"M d, Y \a\t H:i" }}</p>
+
+            <!-- Score Circle -->
+            <div class="inline-flex items-center justify-center w-32 h-32 rounded-full border-4 mb-4
+                {% if attempt.passed %}border-green-500{% else %}border-red-500{% endif %}">
+                <div>
+                    <p class="text-3xl font-bold {% if attempt.passed %}text-green-400{% else %}text-red-400{% endif %}">{{ attempt.percentage }}%</p>
+                    <p class="text-gray-400 text-xs">{{ attempt.score }}/{{ attempt.total_questions }}</p>
+                </div>
+            </div>
+
+            <!-- Pass/Fail Badge -->
+            <div class="mb-4">
+                {% if attempt.passed %}
+                <span class="inline-flex items-center gap-2 px-4 py-2 bg-green-500/20 text-green-400 text-lg font-bold rounded-full">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                    </svg>
+                    Passed
+                </span>
+                {% else %}
+                <span class="inline-flex items-center gap-2 px-4 py-2 bg-red-500/20 text-red-400 text-lg font-bold rounded-full">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                    </svg>
+                    Failed
+                </span>
+                {% endif %}
+            </div>
+
+            {% if attempt.passed and has_badge %}
+            <div class="mt-4 p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
+                <div class="flex items-center justify-center gap-2 text-green-400">
+                    <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                    </svg>
+                    <span class="text-lg font-bold">You earned the {{ attempt.assessment.skill_name }} Verified Badge!</span>
+                </div>
+            </div>
+            {% endif %}
+
+            <p class="text-gray-500 text-sm mt-4">Passing score: {{ attempt.assessment.passing_score }}%</p>
+        </div>
+
+        <!-- Question Review -->
+        <h2 class="text-lg font-bold text-white mb-4">Question Review</h2>
+
+        {% for answer in answers %}
+        <div class="bg-gray-800 border rounded-2xl p-6 mb-4
+            {% if answer.is_correct %}border-green-500/40{% elif answer.selected_option %}border-red-500/40{% else %}border-gray-700{% endif %}">
+            <div class="flex items-start gap-3 mb-4">
+                <span class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold
+                    {% if answer.is_correct %}bg-green-600 text-white{% elif answer.selected_option %}bg-red-600 text-white{% else %}bg-gray-700 text-gray-400{% endif %}">
+                    {{ forloop.counter }}
+                </span>
+                <p class="text-white text-base">{{ answer.question.question_text }}</p>
+            </div>
+
+            <div class="space-y-2 ml-11">
+                {% with correct=answer.question.correct_option selected=answer.selected_option %}
+                <!-- Option A -->
+                <div class="p-3 rounded-xl border text-sm
+                    {% if correct == 'A' %}border-green-500/50 bg-green-500/10
+                    {% elif selected == 'A' and not answer.is_correct %}border-red-500/50 bg-red-500/10
+                    {% else %}border-gray-700{% endif %}">
+                    <span class="font-semibold text-gray-400 mr-1">A.</span>
+                    <span class="{% if correct == 'A' %}text-green-400{% elif selected == 'A' and not answer.is_correct %}text-red-400{% else %}text-gray-300{% endif %}">{{ answer.question.option_a }}</span>
+                    {% if correct == 'A' %}<span class="ml-2 text-green-400 text-xs font-semibold">✓ Correct</span>{% endif %}
+                    {% if selected == 'A' and not answer.is_correct %}<span class="ml-2 text-red-400 text-xs font-semibold">✗ Your answer</span>{% endif %}
+                    {% if selected == 'A' and answer.is_correct %}<span class="ml-2 text-green-400 text-xs font-semibold">✓ Your answer</span>{% endif %}
+                </div>
+
+                <!-- Option B -->
+                <div class="p-3 rounded-xl border text-sm
+                    {% if correct == 'B' %}border-green-500/50 bg-green-500/10
+                    {% elif selected == 'B' and not answer.is_correct %}border-red-500/50 bg-red-500/10
+                    {% else %}border-gray-700{% endif %}">
+                    <span class="font-semibold text-gray-400 mr-1">B.</span>
+                    <span class="{% if correct == 'B' %}text-green-400{% elif selected == 'B' and not answer.is_correct %}text-red-400{% else %}text-gray-300{% endif %}">{{ answer.question.option_b }}</span>
+                    {% if correct == 'B' %}<span class="ml-2 text-green-400 text-xs font-semibold">✓ Correct</span>{% endif %}
+                    {% if selected == 'B' and not answer.is_correct %}<span class="ml-2 text-red-400 text-xs font-semibold">✗ Your answer</span>{% endif %}
+                    {% if selected == 'B' and answer.is_correct %}<span class="ml-2 text-green-400 text-xs font-semibold">✓ Your answer</span>{% endif %}
+                </div>
+
+                <!-- Option C -->
+                <div class="p-3 rounded-xl border text-sm
+                    {% if correct == 'C' %}border-green-500/50 bg-green-500/10
+                    {% elif selected == 'C' and not answer.is_correct %}border-red-500/50 bg-red-500/10
+                    {% else %}border-gray-700{% endif %}">
+                    <span class="font-semibold text-gray-400 mr-1">C.</span>
+                    <span class="{% if correct == 'C' %}text-green-400{% elif selected == 'C' and not answer.is_correct %}text-red-400{% else %}text-gray-300{% endif %}">{{ answer.question.option_c }}</span>
+                    {% if correct == 'C' %}<span class="ml-2 text-green-400 text-xs font-semibold">✓ Correct</span>{% endif %}
+                    {% if selected == 'C' and not answer.is_correct %}<span class="ml-2 text-red-400 text-xs font-semibold">✗ Your answer</span>{% endif %}
+                    {% if selected == 'C' and answer.is_correct %}<span class="ml-2 text-green-400 text-xs font-semibold">✓ Your answer</span>{% endif %}
+                </div>
+
+                <!-- Option D -->
+                <div class="p-3 rounded-xl border text-sm
+                    {% if correct == 'D' %}border-green-500/50 bg-green-500/10
+                    {% elif selected == 'D' and not answer.is_correct %}border-red-500/50 bg-red-500/10
+                    {% else %}border-gray-700{% endif %}">
+                    <span class="font-semibold text-gray-400 mr-1">D.</span>
+                    <span class="{% if correct == 'D' %}text-green-400{% elif selected == 'D' and not answer.is_correct %}text-red-400{% else %}text-gray-300{% endif %}">{{ answer.question.option_d }}</span>
+                    {% if correct == 'D' %}<span class="ml-2 text-green-400 text-xs font-semibold">✓ Correct</span>{% endif %}
+                    {% if selected == 'D' and not answer.is_correct %}<span class="ml-2 text-red-400 text-xs font-semibold">✗ Your answer</span>{% endif %}
+                    {% if selected == 'D' and answer.is_correct %}<span class="ml-2 text-green-400 text-xs font-semibold">✓ Your answer</span>{% endif %}
+                </div>
+                {% endwith %}
+            </div>
+
+            {% if not answer.selected_option %}
+            <p class="ml-11 mt-2 text-yellow-400 text-sm">⚠ Not answered</p>
+            {% endif %}
+
+            {% if answer.question.explanation %}
+            <div class="ml-11 mt-3 p-3 bg-gray-700/50 rounded-xl">
+                <p class="text-gray-400 text-sm"><span class="font-semibold text-gray-300">Explanation:</span> {{ answer.question.explanation }}</p>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+
+        <!-- Back Link -->
+        <div class="mt-6 text-center">
+            <a href="{% url 'assessments:assessment_detail' pk=attempt.assessment.pk %}" class="text-indigo-400 hover:text-indigo-300 font-semibold">
+                ← Back to Assessment
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

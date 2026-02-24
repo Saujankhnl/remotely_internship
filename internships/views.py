@@ -13,6 +13,10 @@ from .models import Internship, Application, Job, JobApplication, JobBookmark, J
 from .forms import InternshipForm, ApplicationForm, JobForm, JobApplicationForm, InterviewForm
 from .emails import send_application_status_email, send_interview_scheduled_email
 from accounts.decorators import company_approved_required
+from notifications.services import (
+    notify_application_status_change, notify_interview_scheduled,
+    notify_new_application,
+)
 
 
 def _build_query_string(request):
@@ -249,6 +253,7 @@ def update_application_status(request, pk):
         if new_status in dict(Application.STATUS_CHOICES):
             application.status = new_status
             application.save()
+            notify_application_status_change(application, new_status)
             messages.success(request, f'Application status updated to {new_status}.')
     
     return redirect('internships:application_detail', pk=pk)
@@ -273,6 +278,7 @@ def apply_internship(request, pk):
             application.internship = internship
             application.applicant = request.user
             application.save()
+            notify_new_application(application)
             messages.success(request, 'Application submitted successfully!')
             return redirect('internships:my_applications')
     else:
@@ -567,6 +573,7 @@ def update_job_application_status(request, pk):
             application.save()
             
             send_application_status_email(application, old_status, new_status)
+            notify_application_status_change(application, new_status)
             
             messages.success(request, f'Application status updated to {new_status}.')
     
@@ -589,6 +596,7 @@ def apply_job(request, pk):
             application.job = job
             application.applicant = request.user
             application.save()
+            notify_new_application(application)
             messages.success(request, 'Application submitted successfully!')
             return redirect('internships:my_job_applications')
     else:
@@ -816,6 +824,7 @@ def schedule_interview(request, pk):
             application.save()
             
             send_interview_scheduled_email(interview)
+            notify_interview_scheduled(interview)
             
             messages.success(request, 'Interview scheduled successfully!')
             return redirect('internships:job_application_detail', pk=pk)
@@ -904,4 +913,93 @@ def my_interviews(request):
     
     return render(request, 'internships/my_interviews.html', {
         'interviews': interviews
+    })
+
+
+# ==================== ATS RANKED APPLICANTS ====================
+
+@company_required
+def ranked_applicants(request, pk):
+    """View ranked applicants for a job based on ATS match score"""
+    job = get_object_or_404(Job, pk=pk, company=request.user)
+
+    applications = job.job_applications.select_related(
+        'applicant__user_profile'
+    ).all()
+
+    job_skills = set(s.strip().lower() for s in job.required_skills.split(',') if s.strip())
+
+    ranked = []
+    for app in applications:
+        try:
+            profile = app.applicant.user_profile
+        except Exception:
+            profile = None
+
+        # Skill match score (50% weight)
+        if profile and profile.skills:
+            user_skills = set(s.strip().lower() for s in profile.skills.split(',') if s.strip())
+            matching = job_skills & user_skills
+            missing = job_skills - user_skills
+            skill_match = (len(matching) / len(job_skills) * 100) if job_skills else 0
+        else:
+            matching = set()
+            missing = job_skills
+            skill_match = 0
+
+        # Experience score (20% weight)
+        exp_map = {'fresher': 0, 'junior': 1, 'mid': 3, 'senior': 5, 'lead': 8}
+        required_years = exp_map.get(job.experience_level, 0)
+        actual_years = app.years_of_experience or 0
+        if required_years > 0:
+            experience_score = min(100, (actual_years / required_years) * 100)
+        else:
+            experience_score = 100 if actual_years > 0 else 50
+
+        # Profile completeness (10% weight)
+        profile_score = profile.completeness_score if profile else 0
+
+        # Assessment score (20% weight) - check for verified badges
+        assessment_score = 0
+        if profile:
+            from assessments.models import VerifiedBadge
+            badge_skills = set(
+                VerifiedBadge.objects.filter(user=app.applicant)
+                .values_list('skill_name', flat=True)
+            )
+            badge_skills_lower = set(s.lower() for s in badge_skills)
+            verified_matching = job_skills & badge_skills_lower
+            if job_skills:
+                assessment_score = (len(verified_matching) / len(job_skills)) * 100
+
+        # Final score
+        final_score = (
+            (skill_match * 0.5) +
+            (experience_score * 0.2) +
+            (profile_score * 0.1) +
+            (assessment_score * 0.2)
+        )
+
+        ranked.append({
+            'application': app,
+            'profile': profile,
+            'skill_match': round(skill_match, 1),
+            'experience_score': round(experience_score, 1),
+            'profile_score': round(profile_score, 1),
+            'assessment_score': round(assessment_score, 1),
+            'final_score': round(final_score, 1),
+            'matching_skills': sorted(matching),
+            'missing_skills': sorted(missing),
+            'is_top': False,
+        })
+
+    ranked.sort(key=lambda x: x['final_score'], reverse=True)
+
+    if ranked:
+        ranked[0]['is_top'] = True
+
+    return render(request, 'internships/ranked_applicants.html', {
+        'job': job,
+        'ranked_applicants': ranked,
+        'total_applicants': len(ranked),
     })

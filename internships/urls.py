@@ -40,6 +40,7 @@ urlpatterns = [
     
     # Company views - Job Application management
     path('job/<int:pk>/applications/', views.view_job_applications, name='view_job_applications'),
+    path('job/<int:pk>/ranked-applicants/', views.ranked_applicants, name='ranked_applicants'),
     path('job-application/<int:pk>/', views.job_application_detail, name='job_application_detail'),
     path('job-application/<int:pk>/update-status/', views.update_job_application_status, name='update_job_application_status'),
     

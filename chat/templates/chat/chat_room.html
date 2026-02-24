@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}<title>Chat – {{ application.job.title }} – Remotely</title>{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex flex-col">
+    <!-- Navigation Bar -->
+    <nav class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <a href="{% url 'accounts:dashboard' %}" class="text-xl sm:text-2xl font-bold text-white hover:text-indigo-400 transition">Remotely</a>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="{% url 'chat:chat_list' %}" class="text-gray-400 hover:text-white text-sm">← All Chats</a>
+                <a href="{% url 'accounts:dashboard' %}" class="text-gray-400 hover:text-white text-sm hidden sm:inline">Dashboard</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Chat Header -->
+    <div class="bg-gray-800 border-b border-gray-700 px-4 py-3">
+        <div class="max-w-5xl mx-auto flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-400 to-indigo-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                {{ other_name|slice:":1"|upper }}
+            </div>
+            <div class="flex-1 min-w-0">
+                <h1 class="text-white font-semibold truncate">{{ other_name }}</h1>
+                <p class="text-gray-400 text-xs truncate">{{ application.job.title }}</p>
+            </div>
+            <div id="typingIndicator" class="text-indigo-400 text-xs hidden">typing…</div>
+        </div>
+    </div>
+
+    <!-- Messages Area -->
+    <div id="messagesContainer" class="flex-1 overflow-y-auto px-4 py-4" style="max-height: calc(100vh - 220px);">
+        <div class="max-w-5xl mx-auto space-y-3">
+            {% for msg in chat_messages %}
+            <div class="flex {% if msg.sender_id == current_user_id %}justify-end{% else %}justify-start{% endif %}" data-message-id="{{ msg.id }}">
+                <div class="max-w-xs sm:max-w-md lg:max-w-lg {% if msg.sender_id == current_user_id %}bg-indigo-600 text-white{% else %}bg-gray-700 text-gray-100{% endif %} rounded-2xl px-4 py-2.5 shadow">
+                    {% if msg.sender_id != current_user_id %}
+                    <p class="text-xs font-semibold text-indigo-300 mb-1">{{ msg.sender.username }}</p>
+                    {% endif %}
+                    <p class="text-sm whitespace-pre-wrap break-words">{{ msg.content }}</p>
+                    {% if msg.attachment %}
+                    <a href="{{ msg.attachment.url }}" target="_blank" class="text-xs underline mt-1 block {% if msg.sender_id == current_user_id %}text-indigo-200{% else %}text-indigo-400{% endif %}">📎 Attachment</a>
+                    {% endif %}
+                    <div class="flex items-center justify-end gap-1 mt-1">
+                        <span class="text-xs opacity-60">{{ msg.created_at|date:"H:i" }}</span>
+                        {% if msg.sender_id == current_user_id %}
+                        <span class="text-xs read-receipt" data-msg-id="{{ msg.id }}">
+                            {% if msg.is_read %}
+                            <svg class="w-3.5 h-3.5 inline text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            <svg class="w-3.5 h-3.5 inline text-blue-300 -ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            {% else %}
+                            <svg class="w-3.5 h-3.5 inline text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            {% endif %}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center text-gray-500 py-12">
+                <svg class="w-12 h-12 mx-auto mb-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                <p>No messages yet. Start the conversation!</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Message Input -->
+    <div class="bg-gray-800 border-t border-gray-700 px-4 py-3 sticky bottom-0">
+        <div class="max-w-5xl mx-auto">
+            <form id="chatForm" class="flex items-end gap-3">
+                {% csrf_token %}
+                <label class="cursor-pointer text-gray-400 hover:text-indigo-400 transition flex-shrink-0 self-center" title="Attach file">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                    <input type="file" id="fileInput" class="hidden">
+                </label>
+                <textarea
+                    id="messageInput"
+                    rows="1"
+                    placeholder="Type a message…"
+                    class="flex-1 px-4 py-3 text-base bg-gray-700 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
+                    style="max-height: 120px;"
+                ></textarea>
+                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white p-3 rounded-xl transition flex-shrink-0 self-center">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="chat-config" class="hidden"
+     data-room-id="{{ room.id }}"
+     data-current-user-id="{{ current_user_id }}"
+     data-csrf-token="{{ csrf_token }}"></div>
+<script src="{% static 'chat/js/chat-room.js' %}"></script>
+{% endblock %}
