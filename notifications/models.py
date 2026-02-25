@@ -32,9 +32,17 @@ class Notification(models.Model):
         ordering = ['-created_at']
         verbose_name = 'Notification'
         verbose_name_plural = 'Notifications'
+        indexes = [
+            models.Index(fields=['user', 'is_read', 'created_at']),
+        ]
 
     def __str__(self):
         return f"{self.user.username} - {self.message[:50]}"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        from django.core.cache import cache
+        cache.delete(f'unread_notif:{self.user_id}')
 
     @classmethod
     def create_notification(cls, user, message, notification_type='general',

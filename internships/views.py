@@ -8,11 +8,10 @@ from django.core.paginator import Paginator
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 from datetime import timedelta
-from functools import wraps
-from .models import Internship, Application, Job, JobApplication, JobBookmark, JobView, Interview
+from .models import Internship, Application, Job, JobApplication, JobBookmark, JobView, Interview, StatusChange
 from .forms import InternshipForm, ApplicationForm, JobForm, JobApplicationForm, InterviewForm
 from .emails import send_application_status_email, send_interview_scheduled_email
-from accounts.decorators import company_approved_required
+from accounts.decorators import company_approved_required, user_required, company_required
 from notifications.services import (
     notify_application_status_change, notify_interview_scheduled,
     notify_new_application,
@@ -24,30 +23,6 @@ def _build_query_string(request):
     params = request.GET.copy()
     params.pop('page', None)
     return params.urlencode()
-
-
-def company_required(view_func):
-    """Decorator to ensure only companies can access the view"""
-    @wraps(view_func)
-    def wrapper(request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return redirect('accounts:login_view')
-        if request.user.user_type != 'company':
-            raise PermissionDenied("Only companies can access this page.")
-        return view_func(request, *args, **kwargs)
-    return wrapper
-
-
-def user_required(view_func):
-    """Decorator to ensure only users can access the view"""
-    @wraps(view_func)
-    def wrapper(request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return redirect('accounts:login_view')
-        if request.user.user_type != 'user':
-            raise PermissionDenied("Only users can access this page.")
-        return view_func(request, *args, **kwargs)
-    return wrapper
 
 
 # ============ Public Views ============
@@ -251,8 +226,15 @@ def update_application_status(request, pk):
     if request.method == 'POST':
         new_status = request.POST.get('status')
         if new_status in dict(Application.STATUS_CHOICES):
+            old_status = application.status
             application.status = new_status
             application.save()
+            StatusChange.objects.create(
+                internship_application=application,
+                old_status=old_status,
+                new_status=new_status,
+                changed_by=request.user,
+            )
             notify_application_status_change(application, new_status)
             messages.success(request, f'Application status updated to {new_status}.')
     
@@ -571,6 +553,12 @@ def update_job_application_status(request, pk):
             old_status = application.status
             application.status = new_status
             application.save()
+            StatusChange.objects.create(
+                job_application=application,
+                old_status=old_status,
+                new_status=new_status,
+                changed_by=request.user,
+            )
             
             send_application_status_email(application, old_status, new_status)
             notify_application_status_change(application, new_status)
@@ -923,9 +911,20 @@ def ranked_applicants(request, pk):
     """View ranked applicants for a job based on ATS match score"""
     job = get_object_or_404(Job, pk=pk, company=request.user)
 
+    from assessments.models import VerifiedBadge
+
     applications = job.job_applications.select_related(
         'applicant__user_profile'
     ).all()
+
+    # Prefetch all badges for these applicants in one query
+    applicant_ids = [app.applicant_id for app in applications]
+    all_badges = VerifiedBadge.objects.filter(
+        user_id__in=applicant_ids
+    ).values_list('user_id', 'skill_name')
+    badges_by_user = {}
+    for user_id, skill_name in all_badges:
+        badges_by_user.setdefault(user_id, set()).add(skill_name.lower())
 
     job_skills = set(s.strip().lower() for s in job.required_skills.split(',') if s.strip())
 
@@ -960,17 +959,9 @@ def ranked_applicants(request, pk):
         profile_score = profile.completeness_score if profile else 0
 
         # Assessment score (20% weight) - check for verified badges
-        assessment_score = 0
-        if profile:
-            from assessments.models import VerifiedBadge
-            badge_skills = set(
-                VerifiedBadge.objects.filter(user=app.applicant)
-                .values_list('skill_name', flat=True)
-            )
-            badge_skills_lower = set(s.lower() for s in badge_skills)
-            verified_matching = job_skills & badge_skills_lower
-            if job_skills:
-                assessment_score = (len(verified_matching) / len(job_skills)) * 100
+        badge_skills_lower = badges_by_user.get(app.applicant_id, set())
+        verified_matching = job_skills & badge_skills_lower
+        assessment_score = (len(verified_matching) / len(job_skills) * 100) if job_skills else 0
 
         # Final score
         final_score = (
@@ -1003,3 +994,45 @@ def ranked_applicants(request, pk):
         'ranked_applicants': ranked,
         'total_applicants': len(ranked),
     })
+
+
+# ==================== CSV EXPORT ====================
+
+@company_required
+def export_applications_csv(request, pk):
+    """Export job applications as CSV for company download."""
+    import csv
+    from django.http import StreamingHttpResponse
+
+    job = get_object_or_404(Job, pk=pk, company=request.user)
+    applications = job.job_applications.select_related(
+        'applicant__user_profile'
+    ).order_by('-applied_at')
+
+    class Echo:
+        def write(self, value):
+            return value
+
+    def rows():
+        writer = csv.writer(Echo())
+        yield writer.writerow([
+            'Name', 'Email', 'Phone', 'Status', 'Experience (years)',
+            'Expected Salary', 'LinkedIn', 'Portfolio', 'Applied At',
+        ])
+        for app in applications:
+            yield writer.writerow([
+                app.full_name,
+                app.email,
+                app.phone,
+                app.get_status_display(),
+                app.years_of_experience,
+                app.expected_salary or '',
+                app.linkedin,
+                app.portfolio,
+                app.applied_at.strftime('%Y-%m-%d %H:%M'),
+            ])
+
+    response = StreamingHttpResponse(rows(), content_type='text/csv')
+    filename = f'{job.title.replace(" ", "_")}_applications.csv'
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response

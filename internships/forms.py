@@ -167,7 +167,7 @@ class InternshipForm(forms.ModelForm):
         fields = [
             'title', 'description', 'internship_type', 'required_skills',
             'qualifications', 'experience', 'location', 'email', 
-            'salary', 'duration'
+            'salary', 'duration', 'deadline'
         ]
         widgets = {
             'title': forms.TextInput(attrs={
@@ -210,6 +210,10 @@ class InternshipForm(forms.ModelForm):
             'duration': forms.TextInput(attrs={
                 'class': DARK_INPUT_CLASS,
                 'placeholder': 'e.g., 3 months, 6 months'
+            }),
+            'deadline': forms.DateInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'type': 'date'
             }),
         }
     

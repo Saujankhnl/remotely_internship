@@ -168,6 +168,13 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # For developm
 # EMAIL_HOST_PASSWORD = SENDGRID_API_KEY
 
 
+# ==================== CACHING ====================
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+    }
+}
+
 # ==================== DJANGO CHANNELS ====================
 ASGI_APPLICATION = 'remotely_internship.asgi.application'
 

@@ -22,3 +22,27 @@ def company_approved_required(view_func):
             return redirect('accounts:company_approval_status')
         return view_func(request, *args, **kwargs)
     return wrapper
+
+
+def company_required(view_func):
+    """Decorator to ensure only companies can access the view"""
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect('accounts:login_view')
+        if request.user.user_type != 'company':
+            raise PermissionDenied("Only companies can access this page.")
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+
+def user_required(view_func):
+    """Decorator to ensure only users can access the view"""
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect('accounts:login_view')
+        if request.user.user_type != 'user':
+            raise PermissionDenied("Only users can access this page.")
+        return view_func(request, *args, **kwargs)
+    return wrapper

@@ -69,17 +69,16 @@ def send_otp_email(to_email, otp, user_type='user'):
     try:
         sg = SendGridAPIClient(settings.SENDGRID_API_KEY)
         response = sg.send(message)
-        print(f"[SendGrid] Status: {response.status_code}")
+        logger.info(f"[SendGrid] Status: {response.status_code}")
         if response.status_code == 202:
             logger.info(f"OTP email sent successfully to {to_email}")
             return True
         else:
             logger.error(f"SendGrid returned status code: {response.status_code}")
-            print(f"[SendGrid] Response body: {response.body}")
+            logger.error(f"[SendGrid] Response body: {response.body}")
             return False
     except Exception as e:
         logger.error(f"SendGrid Error: {str(e)}")
-        print(f"[SendGrid] Error: {str(e)}")
         return False
 
 def register(request):
@@ -139,11 +138,14 @@ def dashboard(request):
     if user.user_type == 'user':
         # USER/STUDENT DASHBOARD
         profile, _ = UserProfile.objects.get_or_create(user=user)
+        old_score = profile.completeness_score
         profile.calculate_completeness()
-        profile.save(update_fields=['completeness_score'])
+        if profile.completeness_score != old_score:
+            profile.save(update_fields=['completeness_score'])
         
         # Import here to avoid circular imports
         from internships.models import Application, Internship, Job, JobApplication, JobBookmark, Interview
+        from django.db.models import Count, Q
         
         # Get user's internship applications
         my_applications = Application.objects.filter(applicant=user).select_related(
@@ -155,12 +157,26 @@ def dashboard(request):
             'job', 'job__company', 'job__company__company_profile'
         ).order_by('-applied_at')
         
-        # Calculate stats
-        total_applications = my_applications.count() + my_job_applications.count()
-        pending_count = my_applications.filter(status='pending').count() + my_job_applications.filter(status='pending').count()
-        accepted_count = my_applications.filter(status='accepted').count() + my_job_applications.filter(status='accepted').count()
-        rejected_count = my_applications.filter(status='rejected').count() + my_job_applications.filter(status='rejected').count()
-        interview_count = my_job_applications.filter(status='interview').count()
+        # Calculate stats using aggregate queries
+        app_stats = Application.objects.filter(applicant=user).aggregate(
+            total=Count('id'),
+            pending=Count('id', filter=Q(status='pending')),
+            accepted=Count('id', filter=Q(status='accepted')),
+            rejected=Count('id', filter=Q(status='rejected')),
+        )
+        job_app_stats = JobApplication.objects.filter(applicant=user).aggregate(
+            total=Count('id'),
+            pending=Count('id', filter=Q(status='pending')),
+            accepted=Count('id', filter=Q(status='accepted')),
+            rejected=Count('id', filter=Q(status='rejected')),
+            interview=Count('id', filter=Q(status='interview')),
+        )
+        
+        total_applications = app_stats['total'] + job_app_stats['total']
+        pending_count = app_stats['pending'] + job_app_stats['pending']
+        accepted_count = app_stats['accepted'] + job_app_stats['accepted']
+        rejected_count = app_stats['rejected'] + job_app_stats['rejected']
+        interview_count = job_app_stats['interview']
         
         # Get available counts
         available_internships = Internship.objects.filter(status='open').count()
@@ -216,8 +232,10 @@ def dashboard(request):
     else:
         # COMPANY DASHBOARD
         profile, _ = CompanyProfile.objects.get_or_create(user=user)
+        old_score = profile.completeness_score
         profile.calculate_completeness()
-        profile.save(update_fields=['completeness_score'])
+        if profile.completeness_score != old_score:
+            profile.save(update_fields=['completeness_score'])
         
         from internships.models import Internship, Application, Job, JobApplication, JobView
         from django.db.models import Count, Q

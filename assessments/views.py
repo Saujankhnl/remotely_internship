@@ -5,20 +5,8 @@ from django.core.exceptions import PermissionDenied
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.db.models import Max, Count
-from functools import wraps
 from .models import SkillAssessment, Question, AssessmentAttempt, AttemptAnswer, VerifiedBadge
-
-
-def user_required(view_func):
-    """Decorator to ensure only users (not companies) can access the view."""
-    @wraps(view_func)
-    def wrapper(request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return redirect('accounts:login_view')
-        if request.user.user_type != 'user':
-            raise PermissionDenied("Only users can access this page.")
-        return view_func(request, *args, **kwargs)
-    return wrapper
+from accounts.decorators import user_required
 
 
 @login_required

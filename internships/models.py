@@ -61,6 +61,10 @@ class Job(models.Model):
         ordering = ['-created_at']
         verbose_name = "Job"
         verbose_name_plural = "Jobs"
+        indexes = [
+            models.Index(fields=['status', 'created_at']),
+            models.Index(fields=['company', 'status']),
+        ]
     
     def __str__(self):
         return f"{self.title} at {self.company.username}"
@@ -134,6 +138,11 @@ class JobApplication(models.Model):
                 name='unique_job_application'
             )
         ]
+        indexes = [
+            models.Index(fields=['applicant', 'status']),
+            models.Index(fields=['job', 'status']),
+            models.Index(fields=['applied_at']),
+        ]
     
     def __str__(self):
         return f"{self.full_name} - {self.job.title}"
@@ -176,6 +185,7 @@ class Internship(models.Model):
     # Optional fields
     salary = models.CharField(max_length=100, blank=True, help_text="For paid internships")
     duration = models.CharField(max_length=100, blank=True, help_text="e.g., 3 months, 6 months")
+    deadline = models.DateField(blank=True, null=True)
     
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='open')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -185,6 +195,10 @@ class Internship(models.Model):
         ordering = ['-created_at']
         verbose_name = "Internship"
         verbose_name_plural = "Internships"
+        indexes = [
+            models.Index(fields=['status', 'created_at']),
+            models.Index(fields=['company', 'status']),
+        ]
     
     def __str__(self):
         return f"{self.title} at {self.company.username}"
@@ -244,6 +258,11 @@ class Application(models.Model):
                 fields=['internship', 'applicant'],
                 name='unique_application_per_internship'
             )
+        ]
+        indexes = [
+            models.Index(fields=['applicant', 'status']),
+            models.Index(fields=['internship', 'status']),
+            models.Index(fields=['applied_at']),
         ]
     
     def __str__(self):
@@ -345,6 +364,37 @@ class Interview(models.Model):
         ordering = ['-scheduled_at']
         verbose_name = "Interview"
         verbose_name_plural = "Interviews"
+        indexes = [
+            models.Index(fields=['status', 'scheduled_at']),
+        ]
     
     def __str__(self):
         return f"Interview for {self.application.full_name} - {self.get_interview_type_display()}"
+
+
+class StatusChange(models.Model):
+    """Tracks status changes for applications (audit trail / timeline)."""
+    job_application = models.ForeignKey(
+        JobApplication, on_delete=models.CASCADE,
+        related_name='status_history', null=True, blank=True,
+    )
+    internship_application = models.ForeignKey(
+        Application, on_delete=models.CASCADE,
+        related_name='status_history', null=True, blank=True,
+    )
+    old_status = models.CharField(max_length=20, blank=True)
+    new_status = models.CharField(max_length=20)
+    changed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True,
+    )
+    note = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+        verbose_name = "Status Change"
+        verbose_name_plural = "Status Changes"
+
+    def __str__(self):
+        return f"{self.old_status} → {self.new_status} at {self.created_at}"

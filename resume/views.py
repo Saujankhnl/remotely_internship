@@ -6,22 +6,9 @@ from django.core.files.base import ContentFile
 from django.views.decorators.http import require_POST
 
 from accounts.models import UserProfile, UserExperience, UserEducation, UserProject
+from accounts.decorators import user_required
 from .models import GeneratedResume
 from .pdf_generator import TEMPLATE_GENERATORS
-
-
-def user_required(view_func):
-    from functools import wraps
-
-    @wraps(view_func)
-    def wrapper(request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return redirect('accounts:login_view')
-        if request.user.user_type != 'user':
-            from django.core.exceptions import PermissionDenied
-            raise PermissionDenied("Only users can access this page.")
-        return view_func(request, *args, **kwargs)
-    return wrapper
 
 
 def _get_user_data(user):

@@ -55,6 +55,10 @@ class Message(models.Model):
         ordering = ['created_at']
         verbose_name = "Message"
         verbose_name_plural = "Messages"
+        indexes = [
+            models.Index(fields=['room', 'is_read']),
+            models.Index(fields=['room', 'created_at']),
+        ]
 
     def __str__(self):
         return f"{self.sender.username}: {self.content[:50]}"

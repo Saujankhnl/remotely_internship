@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Internship, Application, Job, JobApplication, JobBookmark, JobView, Interview
+from .models import Internship, Application, Job, JobApplication, JobBookmark, JobView, Interview, StatusChange
 
 
 @admin.register(Job)
@@ -79,3 +79,10 @@ class ApplicationAdmin(admin.ModelAdmin):
         ('Links', {'fields': ('linkedin', 'portfolio')}),
         ('Timestamps', {'fields': ('applied_at', 'updated_at')}),
     )
+
+
+@admin.register(StatusChange)
+class StatusChangeAdmin(admin.ModelAdmin):
+    list_display = ('created_at', 'old_status', 'new_status', 'changed_by')
+    list_filter = ('new_status', 'created_at')
+    readonly_fields = ('created_at',)
