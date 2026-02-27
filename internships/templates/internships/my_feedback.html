@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% block title %}<title>My Feedback - Remotely</title>{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <nav class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <a href="{% url 'accounts:dashboard' %}" class="flex items-center gap-2 text-gray-300 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                Dashboard
+            </a>
+            <h2 class="text-white font-semibold">My Feedback & Insights</h2>
+        </div>
+    </nav>
+
+    <main class="max-w-4xl mx-auto px-4 py-6">
+        <div class="mb-8">
+            <h1 class="text-2xl font-bold text-white mb-2">Application Feedback</h1>
+            <p class="text-gray-400">Review feedback from companies on your applications, including rejection reasons and skill gap suggestions.</p>
+        </div>
+
+        {% if screening_results %}
+        <div class="bg-gray-800 border border-indigo-600 rounded-2xl p-6 mb-8">
+            <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                Skill Gap Suggestions
+            </h2>
+            <p class="text-gray-400 text-sm mb-4">Based on auto-screening analysis of your applications:</p>
+            {% for sr in screening_results %}
+            <div class="p-3 bg-gray-700 rounded-xl mb-2">
+                <p class="text-gray-300 text-sm whitespace-pre-line">{{ sr.skill_gaps }}</p>
+                {% if sr.missing_skills %}
+                <div class="mt-2 flex flex-wrap gap-2">
+                    {% for skill in sr.missing_skills.split:", " %}
+                    {% if skill.strip %}
+                    <span class="px-2 py-1 bg-indigo-900 text-indigo-300 text-xs rounded-full">{{ skill }}</span>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if job_feedback %}
+        <div class="mb-8">
+            <h2 class="text-lg font-bold text-white mb-4">Job Application Feedback</h2>
+            <div class="space-y-4">
+                {% for fb in job_feedback %}
+                <div class="bg-gray-800 border border-gray-700 rounded-2xl p-5">
+                    <div class="flex items-start justify-between mb-3">
+                        <div>
+                            <p class="text-white font-medium">{{ fb.job_application.job.title }}</p>
+                            <p class="text-gray-500 text-xs">{{ fb.created_at|timesince }} ago</p>
+                        </div>
+                        <span class="px-2 py-1 text-xs rounded-full
+                            {% if fb.feedback_type == 'rejection_reason' %}bg-red-900 text-red-300
+                            {% elif fb.feedback_type == 'skill_gap' %}bg-yellow-900 text-yellow-300
+                            {% else %}bg-blue-900 text-blue-300{% endif %}">
+                            {{ fb.get_feedback_type_display }}
+                        </span>
+                    </div>
+                    <p class="text-gray-300 text-sm">{{ fb.message }}</p>
+                    {% if fb.suggested_skills %}
+                    <div class="mt-3">
+                        <p class="text-gray-500 text-xs uppercase tracking-wider mb-2">Skills to Improve</p>
+                        <div class="flex flex-wrap gap-2">
+                            {% for skill in fb.suggested_skills.split:", " %}
+                            {% if skill.strip %}
+                            <span class="px-2 py-1 bg-yellow-900 text-yellow-300 text-xs rounded-full">{{ skill }}</span>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if internship_feedback %}
+        <div class="mb-8">
+            <h2 class="text-lg font-bold text-white mb-4">Internship Application Feedback</h2>
+            <div class="space-y-4">
+                {% for fb in internship_feedback %}
+                <div class="bg-gray-800 border border-gray-700 rounded-2xl p-5">
+                    <div class="flex items-start justify-between mb-3">
+                        <div>
+                            <p class="text-white font-medium">{{ fb.internship_application.internship.title }}</p>
+                            <p class="text-gray-500 text-xs">{{ fb.created_at|timesince }} ago</p>
+                        </div>
+                        <span class="px-2 py-1 text-xs rounded-full
+                            {% if fb.feedback_type == 'rejection_reason' %}bg-red-900 text-red-300
+                            {% elif fb.feedback_type == 'skill_gap' %}bg-yellow-900 text-yellow-300
+                            {% else %}bg-blue-900 text-blue-300{% endif %}">
+                            {{ fb.get_feedback_type_display }}
+                        </span>
+                    </div>
+                    <p class="text-gray-300 text-sm">{{ fb.message }}</p>
+                    {% if fb.suggested_skills %}
+                    <div class="mt-3">
+                        <p class="text-gray-500 text-xs uppercase tracking-wider mb-2">Skills to Improve</p>
+                        <div class="flex flex-wrap gap-2">
+                            {% for skill in fb.suggested_skills.split:", " %}
+                            {% if skill.strip %}
+                            <span class="px-2 py-1 bg-yellow-900 text-yellow-300 text-xs rounded-full">{{ skill }}</span>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if not job_feedback and not internship_feedback and not screening_results %}
+        <div class="bg-gray-800 border border-gray-700 rounded-2xl p-12 text-center">
+            <svg class="w-16 h-16 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+            <p class="text-gray-400 text-lg">No feedback yet</p>
+            <p class="text-gray-500 text-sm mt-2">When companies provide feedback on your applications, it will appear here</p>
+        </div>
+        {% endif %}
+    </main>
+</div>
+{% endblock %}

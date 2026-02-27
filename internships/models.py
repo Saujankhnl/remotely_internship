@@ -53,17 +53,34 @@ class Job(models.Model):
     benefits = models.TextField(blank=True, help_text="Benefits offered")
     deadline = models.DateField(blank=True, null=True)
     
+    # Premium & Screening
+    is_premium = models.BooleanField(default=False, help_text="Premium listing with higher visibility")
+    auto_screen_enabled = models.BooleanField(default=False, help_text="Enable automatic applicant screening")
+    required_course = models.CharField(max_length=200, blank=True, help_text="Preferred course/degree e.g., Computer Science")
+    min_gpa = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True, help_text="Minimum GPA requirement")
+    ENGLISH_LEVEL_CHOICES = (
+        ('beginner', 'Beginner'),
+        ('intermediate', 'Intermediate'),
+        ('advanced', 'Advanced'),
+        ('fluent', 'Fluent'),
+        ('native', 'Native'),
+    )
+    preferred_english_level = models.CharField(max_length=20, choices=ENGLISH_LEVEL_CHOICES, blank=True)
+    preferred_internet_quality = models.CharField(max_length=20, blank=True, help_text="Minimum internet quality: poor/average/good/excellent")
+    preferred_location = models.CharField(max_length=200, blank=True, help_text="Preferred candidate location")
+    
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='open')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
-        ordering = ['-created_at']
+        ordering = ['-is_premium', '-created_at']
         verbose_name = "Job"
         verbose_name_plural = "Jobs"
         indexes = [
             models.Index(fields=['status', 'created_at']),
             models.Index(fields=['company', 'status']),
+            models.Index(fields=['-is_premium', '-created_at']),
         ]
     
     def __str__(self):
@@ -92,6 +109,7 @@ class JobApplication(models.Model):
         ('pending', 'Pending'),
         ('reviewed', 'Reviewed'),
         ('shortlisted', 'Shortlisted'),
+        ('on_hold', 'On Hold'),
         ('interview', 'Interview Scheduled'),
         ('rejected', 'Rejected'),
         ('accepted', 'Accepted'),
@@ -125,6 +143,8 @@ class JobApplication(models.Model):
     notice_period = models.CharField(max_length=50, blank=True, help_text="e.g., 2 weeks, 1 month")
     
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    match_score = models.DecimalField(max_digits=5, decimal_places=2, default=0, help_text="Auto-screening match score 0-100")
+    auto_status = models.CharField(max_length=20, blank=True, help_text="Auto-screening suggested status")
     applied_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -187,12 +207,28 @@ class Internship(models.Model):
     duration = models.CharField(max_length=100, blank=True, help_text="e.g., 3 months, 6 months")
     deadline = models.DateField(blank=True, null=True)
     
+    # Premium & Screening
+    is_premium = models.BooleanField(default=False, help_text="Premium listing with higher visibility")
+    auto_screen_enabled = models.BooleanField(default=False, help_text="Enable automatic applicant screening")
+    required_course = models.CharField(max_length=200, blank=True, help_text="Preferred course/degree")
+    min_gpa = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True)
+    ENGLISH_LEVEL_CHOICES = (
+        ('beginner', 'Beginner'),
+        ('intermediate', 'Intermediate'),
+        ('advanced', 'Advanced'),
+        ('fluent', 'Fluent'),
+        ('native', 'Native'),
+    )
+    preferred_english_level = models.CharField(max_length=20, choices=ENGLISH_LEVEL_CHOICES, blank=True)
+    preferred_internet_quality = models.CharField(max_length=20, blank=True)
+    preferred_location = models.CharField(max_length=200, blank=True)
+    
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='open')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
-        ordering = ['-created_at']
+        ordering = ['-is_premium', '-created_at']
         verbose_name = "Internship"
         verbose_name_plural = "Internships"
         indexes = [
@@ -217,6 +253,7 @@ class Application(models.Model):
         ('pending', 'Pending'),
         ('reviewed', 'Reviewed'),
         ('shortlisted', 'Shortlisted'),
+        ('on_hold', 'On Hold'),
         ('rejected', 'Rejected'),
         ('accepted', 'Accepted'),
     )
@@ -246,6 +283,8 @@ class Application(models.Model):
     portfolio = models.URLField(blank=True)
     
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    match_score = models.DecimalField(max_digits=5, decimal_places=2, default=0, help_text="Auto-screening match score 0-100")
+    auto_status = models.CharField(max_length=20, blank=True, help_text="Auto-screening suggested status")
     applied_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -398,3 +437,146 @@ class StatusChange(models.Model):
 
     def __str__(self):
         return f"{self.old_status} → {self.new_status} at {self.created_at}"
+
+
+class RejectionTag(models.Model):
+    """Predefined rejection reasons"""
+    name = models.CharField(max_length=100, unique=True)
+    slug = models.SlugField(max_length=100, unique=True)
+    description = models.CharField(max_length=300, blank=True)
+    is_active = models.BooleanField(default=True)
+    sort_order = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ['sort_order', 'name']
+        verbose_name = "Rejection Tag"
+        verbose_name_plural = "Rejection Tags"
+
+    def __str__(self):
+        return self.name
+
+
+class AcceptanceTag(models.Model):
+    """Predefined acceptance/selection reasons"""
+    name = models.CharField(max_length=100, unique=True)
+    slug = models.SlugField(max_length=100, unique=True)
+    description = models.CharField(max_length=300, blank=True)
+    is_active = models.BooleanField(default=True)
+    sort_order = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ['sort_order', 'name']
+        verbose_name = "Acceptance Tag"
+        verbose_name_plural = "Acceptance Tags"
+
+    def __str__(self):
+        return self.name
+
+
+class ApplicationRemark(models.Model):
+    """Structured remarks when company accepts/rejects/shortlists a candidate"""
+    REMARK_TYPE_CHOICES = (
+        ('rejection', 'Rejection'),
+        ('acceptance', 'Acceptance'),
+        ('shortlist', 'Shortlist'),
+        ('on_hold', 'On Hold'),
+        ('general', 'General Note'),
+    )
+
+    job_application = models.ForeignKey(
+        JobApplication, on_delete=models.CASCADE,
+        related_name='remarks', null=True, blank=True,
+    )
+    internship_application = models.ForeignKey(
+        Application, on_delete=models.CASCADE,
+        related_name='remarks', null=True, blank=True,
+    )
+    remark_type = models.CharField(max_length=20, choices=REMARK_TYPE_CHOICES)
+    rejection_tags = models.ManyToManyField(RejectionTag, blank=True, related_name='remarks')
+    acceptance_tags = models.ManyToManyField(AcceptanceTag, blank=True, related_name='remarks')
+    custom_remarks = models.TextField(blank=True, help_text="Custom HR notes and remarks")
+    hr_notes = models.TextField(blank=True, help_text="Internal HR notes (not visible to candidate)")
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Application Remark"
+        verbose_name_plural = "Application Remarks"
+
+    def __str__(self):
+        app = self.job_application or self.internship_application
+        return f"{self.remark_type} remark for {app}"
+
+
+class AutoScreeningResult(models.Model):
+    """Stores detailed auto-screening breakdown per application"""
+    job_application = models.OneToOneField(
+        JobApplication, on_delete=models.CASCADE,
+        related_name='screening_result', null=True, blank=True,
+    )
+    internship_application = models.OneToOneField(
+        Application, on_delete=models.CASCADE,
+        related_name='screening_result', null=True, blank=True,
+    )
+    skill_score = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    course_score = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    gpa_score = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    experience_score = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    location_score = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    english_score = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    internet_score = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    profile_score = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    assessment_score = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    total_score = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    suggested_status = models.CharField(max_length=20, blank=True)
+    matching_skills = models.TextField(blank=True, help_text="Comma-separated matching skills")
+    missing_skills = models.TextField(blank=True, help_text="Comma-separated missing skills")
+    skill_gaps = models.TextField(blank=True, help_text="Suggested skills to learn")
+    screened_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Auto Screening Result"
+        verbose_name_plural = "Auto Screening Results"
+
+    def __str__(self):
+        app = self.job_application or self.internship_application
+        return f"Screening: {app} - {self.total_score}%"
+
+
+class CandidateFeedback(models.Model):
+    """Transparency feedback visible to candidates about their application"""
+    job_application = models.ForeignKey(
+        JobApplication, on_delete=models.CASCADE,
+        related_name='feedback', null=True, blank=True,
+    )
+    internship_application = models.ForeignKey(
+        Application, on_delete=models.CASCADE,
+        related_name='feedback', null=True, blank=True,
+    )
+    feedback_type = models.CharField(max_length=20, choices=(
+        ('rejection_reason', 'Rejection Reason'),
+        ('skill_gap', 'Skill Gap Suggestion'),
+        ('improvement', 'Improvement Suggestion'),
+        ('general', 'General Feedback'),
+    ))
+    message = models.TextField()
+    suggested_skills = models.CharField(max_length=500, blank=True, help_text="Comma-separated skills to improve")
+    is_visible = models.BooleanField(default=True, help_text="Visible to candidate")
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Candidate Feedback"
+        verbose_name_plural = "Candidate Feedback"
+
+    def __str__(self):
+        app = self.job_application or self.internship_application
+        return f"Feedback for {app}"

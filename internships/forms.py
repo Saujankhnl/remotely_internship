@@ -1,7 +1,10 @@
 from django import forms
 from django.core.validators import FileExtensionValidator
 from django.core.exceptions import ValidationError
-from .models import Internship, Application, Job, JobApplication, Interview
+from .models import (
+    Internship, Application, Job, JobApplication, Interview,
+    ApplicationRemark, RejectionTag, AcceptanceTag, CandidateFeedback,
+)
 
 DARK_INPUT_CLASS = 'w-full px-4 py-3 text-base bg-gray-700 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500'
 
@@ -32,7 +35,10 @@ class JobForm(forms.ModelForm):
             'title', 'description', 'job_type', 'required_skills',
             'qualifications', 'experience_level', 'salary_min', 'salary_max',
             'salary_currency', 'location', 'is_remote', 'email', 
-            'benefits', 'deadline'
+            'benefits', 'deadline',
+            'is_premium', 'auto_screen_enabled', 'required_course',
+            'min_gpa', 'preferred_english_level', 'preferred_internet_quality',
+            'preferred_location'
         ]
         widgets = {
             'title': forms.TextInput(attrs={
@@ -90,6 +96,33 @@ class JobForm(forms.ModelForm):
             'deadline': forms.DateInput(attrs={
                 'class': DARK_INPUT_CLASS,
                 'type': 'date'
+            }),
+            'is_premium': forms.CheckboxInput(attrs={
+                'class': 'w-5 h-5 rounded'
+            }),
+            'auto_screen_enabled': forms.CheckboxInput(attrs={
+                'class': 'w-5 h-5 rounded'
+            }),
+            'required_course': forms.TextInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'e.g., Computer Science, BBA'
+            }),
+            'min_gpa': forms.NumberInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'e.g., 3.0',
+                'step': '0.01',
+                'min': '0',
+                'max': '4'
+            }),
+            'preferred_english_level': forms.Select(attrs={
+                'class': DARK_INPUT_CLASS,
+            }),
+            'preferred_internet_quality': forms.Select(attrs={
+                'class': DARK_INPUT_CLASS,
+            }, choices=[('', 'Any'), ('poor', 'Poor'), ('average', 'Average'), ('good', 'Good'), ('excellent', 'Excellent')]),
+            'preferred_location': forms.TextInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'Preferred candidate location'
             }),
         }
 
@@ -167,7 +200,10 @@ class InternshipForm(forms.ModelForm):
         fields = [
             'title', 'description', 'internship_type', 'required_skills',
             'qualifications', 'experience', 'location', 'email', 
-            'salary', 'duration', 'deadline'
+            'salary', 'duration', 'deadline',
+            'is_premium', 'auto_screen_enabled', 'required_course',
+            'min_gpa', 'preferred_english_level', 'preferred_internet_quality',
+            'preferred_location'
         ]
         widgets = {
             'title': forms.TextInput(attrs={
@@ -214,6 +250,33 @@ class InternshipForm(forms.ModelForm):
             'deadline': forms.DateInput(attrs={
                 'class': DARK_INPUT_CLASS,
                 'type': 'date'
+            }),
+            'is_premium': forms.CheckboxInput(attrs={
+                'class': 'w-5 h-5 rounded'
+            }),
+            'auto_screen_enabled': forms.CheckboxInput(attrs={
+                'class': 'w-5 h-5 rounded'
+            }),
+            'required_course': forms.TextInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'e.g., Computer Science, BBA'
+            }),
+            'min_gpa': forms.NumberInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'e.g., 3.0',
+                'step': '0.01',
+                'min': '0',
+                'max': '4'
+            }),
+            'preferred_english_level': forms.Select(attrs={
+                'class': DARK_INPUT_CLASS,
+            }),
+            'preferred_internet_quality': forms.Select(attrs={
+                'class': DARK_INPUT_CLASS,
+            }, choices=[('', 'Any'), ('poor', 'Poor'), ('average', 'Average'), ('good', 'Good'), ('excellent', 'Excellent')]),
+            'preferred_location': forms.TextInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'Preferred candidate location'
             }),
         }
     
@@ -306,5 +369,64 @@ class InterviewForm(forms.ModelForm):
                 'class': DARK_INPUT_CLASS,
                 'placeholder': 'Additional notes for the candidate...',
                 'rows': 3
+            }),
+        }
+
+
+class ApplicationRemarkForm(forms.ModelForm):
+    """Form for adding structured remarks when changing application status"""
+    
+    class Meta:
+        model = ApplicationRemark
+        fields = ['remark_type', 'rejection_tags', 'acceptance_tags', 'custom_remarks', 'hr_notes']
+        widgets = {
+            'remark_type': forms.HiddenInput(),
+            'rejection_tags': forms.CheckboxSelectMultiple(attrs={
+                'class': 'space-y-2',
+            }),
+            'acceptance_tags': forms.CheckboxSelectMultiple(attrs={
+                'class': 'space-y-2',
+            }),
+            'custom_remarks': forms.Textarea(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'Additional remarks visible to candidate...',
+                'rows': 3
+            }),
+            'hr_notes': forms.Textarea(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'Internal HR notes (not visible to candidate)...',
+                'rows': 3
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['rejection_tags'].queryset = RejectionTag.objects.filter(is_active=True)
+        self.fields['acceptance_tags'].queryset = AcceptanceTag.objects.filter(is_active=True)
+        self.fields['rejection_tags'].required = False
+        self.fields['acceptance_tags'].required = False
+
+
+class CandidateFeedbackForm(forms.ModelForm):
+    """Form for sending feedback to candidates"""
+    
+    class Meta:
+        model = CandidateFeedback
+        fields = ['feedback_type', 'message', 'suggested_skills', 'is_visible']
+        widgets = {
+            'feedback_type': forms.Select(attrs={
+                'class': DARK_INPUT_CLASS,
+            }),
+            'message': forms.Textarea(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'Provide constructive feedback...',
+                'rows': 4
+            }),
+            'suggested_skills': forms.TextInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'Python, Django, React (comma separated)'
+            }),
+            'is_visible': forms.CheckboxInput(attrs={
+                'class': 'w-5 h-5 rounded'
             }),
         }

@@ -42,6 +42,26 @@ class UserProfile(models.Model):
     experience = models.TextField(blank=True)
     resume = models.FileField(upload_to='resumes/', blank=True, null=True)
     
+    # Screening-relevant fields
+    course = models.CharField(max_length=200, blank=True, help_text="e.g., Computer Science, BBA, MBA")
+    gpa = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True, help_text="GPA on 4.0 scale")
+    ENGLISH_LEVEL_CHOICES = (
+        ('beginner', 'Beginner'),
+        ('intermediate', 'Intermediate'),
+        ('advanced', 'Advanced'),
+        ('fluent', 'Fluent'),
+        ('native', 'Native'),
+    )
+    english_level = models.CharField(max_length=20, choices=ENGLISH_LEVEL_CHOICES, blank=True)
+    INTERNET_QUALITY_CHOICES = (
+        ('poor', 'Poor'),
+        ('average', 'Average'),
+        ('good', 'Good'),
+        ('excellent', 'Excellent'),
+    )
+    internet_quality = models.CharField(max_length=20, choices=INTERNET_QUALITY_CHOICES, blank=True)
+    available_hours = models.PositiveSmallIntegerField(default=0, help_text="Weekly available hours for work")
+    
     # Social Links
     linkedin = models.URLField(blank=True)
     github = models.URLField(blank=True)
@@ -72,6 +92,10 @@ class UserProfile(models.Model):
         if self.location: score += 10
         if any([self.linkedin, self.github, self.facebook, self.instagram]): score += 10
         if self.headline: score += 10
+        if self.course: score += 5
+        if self.gpa: score += 5
+        if self.english_level: score += 5
+        if self.internet_quality: score += 5
         self.completeness_score = score
         return score
 
@@ -133,6 +157,15 @@ class CompanyProfile(models.Model):
     # Verification badge
     is_verified = models.BooleanField(default=False)
     verified_at = models.DateTimeField(null=True, blank=True)
+    
+    # Subscription tier
+    SUBSCRIPTION_CHOICES = (
+        ('free', 'Free'),
+        ('premium', 'Premium'),
+        ('enterprise', 'Enterprise'),
+    )
+    subscription_tier = models.CharField(max_length=20, choices=SUBSCRIPTION_CHOICES, default='free')
+    subscription_expires = models.DateTimeField(null=True, blank=True)
     
     # Trust
     completeness_score = models.PositiveSmallIntegerField(default=0)

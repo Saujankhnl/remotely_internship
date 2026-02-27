@@ -96,7 +96,9 @@ class UserProfileForm(forms.ModelForm):
     class Meta:
         model = UserProfile
         fields = ['profile_photo', 'full_name', 'headline', 'phone', 'location', 'bio', 
-                  'skills', 'education', 'experience', 'open_to_work', 'is_public',
+                  'skills', 'education', 'experience', 'course', 'gpa',
+                  'english_level', 'internet_quality', 'available_hours',
+                  'open_to_work', 'is_public',
                   'linkedin', 'github', 'facebook', 'instagram', 'whatsapp']
         widgets = {
             'full_name': forms.TextInput(attrs={
@@ -132,6 +134,29 @@ class UserProfileForm(forms.ModelForm):
                 'class': DARK_INPUT_CLASS,
                 'placeholder': 'Your work experience...',
                 'rows': 3
+            }),
+            'course': forms.TextInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'e.g., Computer Science, BBA, MBA'
+            }),
+            'gpa': forms.NumberInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'e.g., 3.5',
+                'step': '0.01',
+                'min': '0',
+                'max': '4'
+            }),
+            'english_level': forms.Select(attrs={
+                'class': DARK_INPUT_CLASS,
+            }),
+            'internet_quality': forms.Select(attrs={
+                'class': DARK_INPUT_CLASS,
+            }),
+            'available_hours': forms.NumberInput(attrs={
+                'class': DARK_INPUT_CLASS,
+                'placeholder': 'Weekly hours available',
+                'min': '0',
+                'max': '168'
             }),
             'linkedin': forms.URLInput(attrs={
                 'class': DARK_INPUT_CLASS,

@@ -8,8 +8,15 @@ from django.core.paginator import Paginator
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 from datetime import timedelta
-from .models import Internship, Application, Job, JobApplication, JobBookmark, JobView, Interview, StatusChange
-from .forms import InternshipForm, ApplicationForm, JobForm, JobApplicationForm, InterviewForm
+from .models import (
+    Internship, Application, Job, JobApplication, JobBookmark, JobView,
+    Interview, StatusChange, RejectionTag, AcceptanceTag, ApplicationRemark,
+    AutoScreeningResult, CandidateFeedback,
+)
+from .forms import (
+    InternshipForm, ApplicationForm, JobForm, JobApplicationForm,
+    InterviewForm, ApplicationRemarkForm, CandidateFeedbackForm,
+)
 from .emails import send_application_status_email, send_interview_scheduled_email
 from accounts.decorators import company_approved_required, user_required, company_required
 from notifications.services import (
@@ -217,7 +224,7 @@ def application_detail(request, pk):
 
 @company_required
 def update_application_status(request, pk):
-    """Update application status"""
+    """Update internship application status with structured remarks"""
     application = get_object_or_404(Application, pk=pk)
     
     if application.internship.company != request.user:
@@ -228,13 +235,71 @@ def update_application_status(request, pk):
         if new_status in dict(Application.STATUS_CHOICES):
             old_status = application.status
             application.status = new_status
-            application.save()
+            application.save(update_fields=['status'])
+            
             StatusChange.objects.create(
                 internship_application=application,
                 old_status=old_status,
                 new_status=new_status,
                 changed_by=request.user,
+                note=request.POST.get('note', ''),
             )
+            
+            remark_type_map = {
+                'rejected': 'rejection',
+                'accepted': 'acceptance',
+                'shortlisted': 'shortlist',
+                'on_hold': 'on_hold',
+            }
+            remark_type = remark_type_map.get(new_status)
+            if remark_type:
+                remark = ApplicationRemark.objects.create(
+                    internship_application=application,
+                    remark_type=remark_type,
+                    custom_remarks=request.POST.get('custom_remarks', ''),
+                    hr_notes=request.POST.get('hr_notes', ''),
+                    created_by=request.user,
+                )
+                rejection_tag_ids = request.POST.getlist('rejection_tags')
+                if rejection_tag_ids:
+                    remark.rejection_tags.set(rejection_tag_ids)
+                acceptance_tag_ids = request.POST.getlist('acceptance_tags')
+                if acceptance_tag_ids:
+                    remark.acceptance_tags.set(acceptance_tag_ids)
+                
+                if new_status == 'rejected':
+                    tag_names = list(remark.rejection_tags.values_list('name', flat=True))
+                    feedback_msg = f"Your application was not selected. Reasons: {', '.join(tag_names)}." if tag_names else "Your application was not selected after careful review."
+                    if request.POST.get('custom_remarks'):
+                        feedback_msg += f" Additional notes: {request.POST.get('custom_remarks')}"
+                    suggested = ''
+                    try:
+                        sr = application.screening_result
+                        if sr.missing_skills:
+                            suggested = sr.missing_skills
+                    except AutoScreeningResult.DoesNotExist:
+                        pass
+                    CandidateFeedback.objects.create(
+                        internship_application=application,
+                        feedback_type='rejection_reason',
+                        message=feedback_msg,
+                        suggested_skills=suggested,
+                        is_visible=True,
+                        created_by=request.user,
+                    )
+                elif new_status == 'accepted':
+                    tag_names = list(remark.acceptance_tags.values_list('name', flat=True))
+                    feedback_msg = "Congratulations! Your application has been accepted."
+                    if tag_names:
+                        feedback_msg += f" Selection reasons: {', '.join(tag_names)}."
+                    CandidateFeedback.objects.create(
+                        internship_application=application,
+                        feedback_type='general',
+                        message=feedback_msg,
+                        is_visible=True,
+                        created_by=request.user,
+                    )
+            
             notify_application_status_change(application, new_status)
             messages.success(request, f'Application status updated to {new_status}.')
     
@@ -260,6 +325,12 @@ def apply_internship(request, pk):
             application.internship = internship
             application.applicant = request.user
             application.save()
+            # Auto-screen on submission
+            try:
+                from .screening import auto_screen_application
+                auto_screen_application(application)
+            except Exception:
+                pass
             notify_new_application(application)
             messages.success(request, 'Application submitted successfully!')
             return redirect('internships:my_applications')
@@ -541,7 +612,7 @@ def job_application_detail(request, pk):
 
 @company_required
 def update_job_application_status(request, pk):
-    """Update job application status"""
+    """Update job application status with structured remarks"""
     application = get_object_or_404(JobApplication, pk=pk)
     
     if application.job.company != request.user:
@@ -552,13 +623,79 @@ def update_job_application_status(request, pk):
         if new_status in dict(JobApplication.STATUS_CHOICES):
             old_status = application.status
             application.status = new_status
-            application.save()
+            application.save(update_fields=['status'])
+            
             StatusChange.objects.create(
                 job_application=application,
                 old_status=old_status,
                 new_status=new_status,
                 changed_by=request.user,
+                note=request.POST.get('note', ''),
             )
+            
+            # Create structured remark
+            remark_type_map = {
+                'rejected': 'rejection',
+                'accepted': 'acceptance',
+                'shortlisted': 'shortlist',
+                'on_hold': 'on_hold',
+            }
+            remark_type = remark_type_map.get(new_status)
+            if remark_type:
+                remark = ApplicationRemark.objects.create(
+                    job_application=application,
+                    remark_type=remark_type,
+                    custom_remarks=request.POST.get('custom_remarks', ''),
+                    hr_notes=request.POST.get('hr_notes', ''),
+                    created_by=request.user,
+                )
+                # Add tags
+                rejection_tag_ids = request.POST.getlist('rejection_tags')
+                if rejection_tag_ids:
+                    remark.rejection_tags.set(rejection_tag_ids)
+                acceptance_tag_ids = request.POST.getlist('acceptance_tags')
+                if acceptance_tag_ids:
+                    remark.acceptance_tags.set(acceptance_tag_ids)
+                
+                # Auto-generate candidate feedback for rejected/accepted
+                if new_status == 'rejected':
+                    tag_names = list(remark.rejection_tags.values_list('name', flat=True))
+                    if tag_names:
+                        feedback_msg = f"Your application was not selected. Reasons: {', '.join(tag_names)}."
+                    else:
+                        feedback_msg = "Your application was not selected after careful review."
+                    if request.POST.get('custom_remarks'):
+                        feedback_msg += f" Additional notes: {request.POST.get('custom_remarks')}"
+                    
+                    # Skill gap suggestions from screening
+                    suggested = ''
+                    try:
+                        sr = application.screening_result
+                        if sr.missing_skills:
+                            suggested = sr.missing_skills
+                    except AutoScreeningResult.DoesNotExist:
+                        pass
+                    
+                    CandidateFeedback.objects.create(
+                        job_application=application,
+                        feedback_type='rejection_reason',
+                        message=feedback_msg,
+                        suggested_skills=suggested,
+                        is_visible=True,
+                        created_by=request.user,
+                    )
+                elif new_status == 'accepted':
+                    tag_names = list(remark.acceptance_tags.values_list('name', flat=True))
+                    feedback_msg = "Congratulations! Your application has been accepted."
+                    if tag_names:
+                        feedback_msg += f" Selection reasons: {', '.join(tag_names)}."
+                    CandidateFeedback.objects.create(
+                        job_application=application,
+                        feedback_type='general',
+                        message=feedback_msg,
+                        is_visible=True,
+                        created_by=request.user,
+                    )
             
             send_application_status_email(application, old_status, new_status)
             notify_application_status_change(application, new_status)
@@ -584,6 +721,12 @@ def apply_job(request, pk):
             application.job = job
             application.applicant = request.user
             application.save()
+            # Auto-screen on submission
+            try:
+                from .screening import auto_screen_application
+                auto_screen_application(application)
+            except Exception:
+                pass
             notify_new_application(application)
             messages.success(request, 'Application submitted successfully!')
             return redirect('internships:my_job_applications')
@@ -1036,3 +1179,288 @@ def export_applications_csv(request, pk):
     filename = f'{job.title.replace(" ", "_")}_applications.csv'
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response
+
+
+# ==================== REMARKS POPUP DATA (AJAX) ====================
+
+@company_required
+def get_remark_tags(request):
+    """Return rejection and acceptance tags as JSON for the remarks popup"""
+    rejection_tags = list(RejectionTag.objects.filter(is_active=True).values('id', 'name', 'description'))
+    acceptance_tags = list(AcceptanceTag.objects.filter(is_active=True).values('id', 'name', 'description'))
+    return JsonResponse({
+        'rejection_tags': rejection_tags,
+        'acceptance_tags': acceptance_tags,
+    })
+
+
+# ==================== ACCEPTED / REJECTED LISTS ====================
+
+@company_required
+def accepted_candidates(request, pk):
+    """View list of accepted candidates for a job with selection reasons"""
+    job = get_object_or_404(Job, pk=pk, company=request.user)
+    applications = job.job_applications.filter(status='accepted').select_related(
+        'applicant__user_profile'
+    ).prefetch_related('remarks__acceptance_tags')
+    
+    candidates = []
+    for app in applications:
+        remarks = app.remarks.filter(remark_type='acceptance')
+        tags = []
+        custom = ''
+        for r in remarks:
+            tags.extend(r.acceptance_tags.values_list('name', flat=True))
+            if r.custom_remarks:
+                custom = r.custom_remarks
+        candidates.append({
+            'application': app,
+            'tags': list(set(tags)),
+            'custom_remarks': custom,
+            'match_score': app.match_score,
+        })
+    
+    return render(request, 'internships/accepted_candidates.html', {
+        'job': job,
+        'candidates': candidates,
+        'total': len(candidates),
+    })
+
+
+@company_required
+def rejected_candidates(request, pk):
+    """View list of rejected candidates for a job with rejection reasons"""
+    job = get_object_or_404(Job, pk=pk, company=request.user)
+    applications = job.job_applications.filter(status='rejected').select_related(
+        'applicant__user_profile'
+    ).prefetch_related('remarks__rejection_tags')
+    
+    candidates = []
+    rejection_tag_counts = {}
+    for app in applications:
+        remarks = app.remarks.filter(remark_type='rejection')
+        tags = []
+        custom = ''
+        for r in remarks:
+            tag_names = list(r.rejection_tags.values_list('name', flat=True))
+            tags.extend(tag_names)
+            for t in tag_names:
+                rejection_tag_counts[t] = rejection_tag_counts.get(t, 0) + 1
+            if r.custom_remarks:
+                custom = r.custom_remarks
+        candidates.append({
+            'application': app,
+            'tags': list(set(tags)),
+            'custom_remarks': custom,
+            'match_score': app.match_score,
+        })
+    
+    return render(request, 'internships/rejected_candidates.html', {
+        'job': job,
+        'candidates': candidates,
+        'total': len(candidates),
+        'rejection_breakdown': dict(sorted(rejection_tag_counts.items(), key=lambda x: x[1], reverse=True)),
+    })
+
+
+# ==================== AUTO-SCREENING VIEWS ====================
+
+@company_required
+def run_auto_screening(request, pk):
+    """Run auto-screening on all pending applications for a job"""
+    job = get_object_or_404(Job, pk=pk, company=request.user)
+    
+    if request.method == 'POST':
+        from .screening import bulk_screen_applications
+        results = bulk_screen_applications(job)
+        messages.success(request, f'Auto-screening completed for {len(results)} applications.')
+    
+    return redirect('internships:ranked_applicants', pk=pk)
+
+
+@company_required
+def apply_auto_screening_view(request, pk):
+    """Run auto-screening AND auto-update statuses for a job"""
+    job = get_object_or_404(Job, pk=pk, company=request.user)
+    
+    if request.method == 'POST':
+        from .screening import apply_auto_screening
+        if not job.auto_screen_enabled:
+            job.auto_screen_enabled = True
+            job.save(update_fields=['auto_screen_enabled'])
+        updated = apply_auto_screening(job)
+        messages.success(request, f'Auto-screening applied. {len(updated)} applications auto-categorized.')
+    
+    return redirect('internships:ranked_applicants', pk=pk)
+
+
+# ==================== ENHANCED ANALYTICS ====================
+
+@company_required
+def screening_analytics(request, pk):
+    """Analytics dashboard for a job's screening results"""
+    job = get_object_or_404(Job, pk=pk, company=request.user)
+    
+    applications = job.job_applications.all()
+    total = applications.count()
+    
+    # Status distribution
+    status_dist = {}
+    for status, label in JobApplication.STATUS_CHOICES:
+        count = applications.filter(status=status).count()
+        if count > 0:
+            status_dist[label] = count
+    
+    # Score distribution (buckets)
+    score_buckets = {'0-20': 0, '21-40': 0, '41-60': 0, '61-80': 0, '81-100': 0}
+    for app in applications:
+        score = float(app.match_score)
+        if score <= 20:
+            score_buckets['0-20'] += 1
+        elif score <= 40:
+            score_buckets['21-40'] += 1
+        elif score <= 60:
+            score_buckets['41-60'] += 1
+        elif score <= 80:
+            score_buckets['61-80'] += 1
+        else:
+            score_buckets['81-100'] += 1
+    
+    # Rejection reason breakdown
+    rejection_remarks = ApplicationRemark.objects.filter(
+        job_application__job=job, remark_type='rejection'
+    ).prefetch_related('rejection_tags')
+    
+    rejection_breakdown = {}
+    for remark in rejection_remarks:
+        for tag in remark.rejection_tags.all():
+            rejection_breakdown[tag.name] = rejection_breakdown.get(tag.name, 0) + 1
+    rejection_breakdown = dict(sorted(rejection_breakdown.items(), key=lambda x: x[1], reverse=True))
+    
+    # Acceptance reason breakdown
+    acceptance_remarks = ApplicationRemark.objects.filter(
+        job_application__job=job, remark_type='acceptance'
+    ).prefetch_related('acceptance_tags')
+    
+    acceptance_breakdown = {}
+    for remark in acceptance_remarks:
+        for tag in remark.acceptance_tags.all():
+            acceptance_breakdown[tag.name] = acceptance_breakdown.get(tag.name, 0) + 1
+    acceptance_breakdown = dict(sorted(acceptance_breakdown.items(), key=lambda x: x[1], reverse=True))
+    
+    # Average match score
+    from django.db.models import Avg
+    avg_score = applications.aggregate(avg=Avg('match_score'))['avg'] or 0
+    
+    # Top candidates by score
+    top_candidates = applications.filter(match_score__gt=0).order_by('-match_score')[:10]
+    
+    import json
+    
+    return render(request, 'internships/screening_analytics.html', {
+        'job': job,
+        'total_applications': total,
+        'status_dist': status_dist,
+        'status_dist_json': json.dumps(status_dist),
+        'score_buckets': score_buckets,
+        'score_buckets_json': json.dumps(score_buckets),
+        'rejection_breakdown': rejection_breakdown,
+        'rejection_breakdown_json': json.dumps(rejection_breakdown),
+        'acceptance_breakdown': acceptance_breakdown,
+        'acceptance_breakdown_json': json.dumps(acceptance_breakdown),
+        'avg_score': round(float(avg_score), 1),
+        'top_candidates': top_candidates,
+    })
+
+
+# ==================== CANDIDATE FEEDBACK VIEW ====================
+
+@user_required
+def my_feedback(request):
+    """View feedback and rejection reasons for the candidate"""
+    from internships.models import CandidateFeedback
+    
+    job_feedback = CandidateFeedback.objects.filter(
+        job_application__applicant=request.user,
+        is_visible=True,
+    ).select_related('job_application__job')
+    
+    internship_feedback = CandidateFeedback.objects.filter(
+        internship_application__applicant=request.user,
+        is_visible=True,
+    ).select_related('internship_application__internship')
+    
+    # Get screening results for skill gap suggestions
+    screening_results = AutoScreeningResult.objects.filter(
+        Q(job_application__applicant=request.user) |
+        Q(internship_application__applicant=request.user)
+    ).exclude(skill_gaps='')
+    
+    return render(request, 'internships/my_feedback.html', {
+        'job_feedback': job_feedback,
+        'internship_feedback': internship_feedback,
+        'screening_results': screening_results,
+    })
+
+
+# ==================== SMART SORTING ====================
+
+@company_required
+def smart_sorted_applicants(request, pk):
+    """View applicants sorted by match score with screening details"""
+    job = get_object_or_404(Job, pk=pk, company=request.user)
+    
+    sort_by = request.GET.get('sort', 'score')
+    order = request.GET.get('order', 'desc')
+    filter_status = request.GET.get('status', '')
+    
+    applications = job.job_applications.select_related(
+        'applicant__user_profile'
+    ).prefetch_related('remarks')
+    
+    if filter_status:
+        applications = applications.filter(status=filter_status)
+    
+    if sort_by == 'score':
+        applications = applications.order_by(
+            '-match_score' if order == 'desc' else 'match_score'
+        )
+    elif sort_by == 'date':
+        applications = applications.order_by(
+            '-applied_at' if order == 'desc' else 'applied_at'
+        )
+    elif sort_by == 'name':
+        applications = applications.order_by(
+            '-full_name' if order == 'desc' else 'full_name'
+        )
+    elif sort_by == 'experience':
+        applications = applications.order_by(
+            '-years_of_experience' if order == 'desc' else 'years_of_experience'
+        )
+    
+    # Attach screening results
+    applicant_data = []
+    for app in applications:
+        try:
+            screening = app.screening_result
+        except AutoScreeningResult.DoesNotExist:
+            screening = None
+        
+        applicant_data.append({
+            'application': app,
+            'screening': screening,
+            'has_remarks': app.remarks.exists(),
+        })
+    
+    paginator = Paginator(applicant_data, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'internships/smart_sorted_applicants.html', {
+        'job': job,
+        'page_obj': page_obj,
+        'sort_by': sort_by,
+        'order': order,
+        'filter_status': filter_status,
+        'status_choices': JobApplication.STATUS_CHOICES,
+    })

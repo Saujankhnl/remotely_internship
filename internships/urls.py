@@ -45,6 +45,15 @@ urlpatterns = [
     path('job-application/<int:pk>/', views.job_application_detail, name='job_application_detail'),
     path('job-application/<int:pk>/update-status/', views.update_job_application_status, name='update_job_application_status'),
     
+    # ==================== SCREENING & REMARKS ====================
+    path('job/<int:pk>/accepted/', views.accepted_candidates, name='accepted_candidates'),
+    path('job/<int:pk>/rejected/', views.rejected_candidates, name='rejected_candidates'),
+    path('job/<int:pk>/run-screening/', views.run_auto_screening, name='run_auto_screening'),
+    path('job/<int:pk>/apply-screening/', views.apply_auto_screening_view, name='apply_auto_screening'),
+    path('job/<int:pk>/screening-analytics/', views.screening_analytics, name='screening_analytics'),
+    path('job/<int:pk>/smart-sort/', views.smart_sorted_applicants, name='smart_sorted_applicants'),
+    path('api/remark-tags/', views.get_remark_tags, name='get_remark_tags'),
+    
     # User views - Job
     path('job/<int:pk>/apply/', views.apply_job, name='apply_job'),
     path('my-job-applications/', views.my_job_applications, name='my_job_applications'),
@@ -67,4 +76,7 @@ urlpatterns = [
     path('interview/<int:pk>/cancel/', views.cancel_interview, name='cancel_interview'),
     path('interview/<int:pk>/complete/', views.complete_interview, name='complete_interview'),
     path('my-interviews/', views.my_interviews, name='my_interviews'),
+    
+    # ==================== CANDIDATE FEEDBACK ====================
+    path('my-feedback/', views.my_feedback, name='my_feedback'),
 ]

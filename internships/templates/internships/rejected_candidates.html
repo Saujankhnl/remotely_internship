@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% block title %}<title>Rejected Candidates - {{ job.title }} - Remotely</title>{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <nav class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <a href="{% url 'internships:view_job_applications' job.pk %}" class="flex items-center gap-2 text-gray-300 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                Back to Applications
+            </a>
+            <div class="flex items-center gap-3">
+                <a href="{% url 'internships:accepted_candidates' job.pk %}" class="text-green-400 hover:text-green-300 text-sm">Accepted List</a>
+                <a href="{% url 'internships:screening_analytics' job.pk %}" class="text-indigo-400 hover:text-indigo-300 text-sm">Analytics</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-6xl mx-auto px-4 py-6">
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-2xl font-bold text-white flex items-center gap-3">
+                    <span class="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </span>
+                    Rejected Candidates
+                </h1>
+                <p class="text-gray-400 mt-1">{{ job.title }} &middot; {{ total }} candidate{{ total|pluralize }}</p>
+            </div>
+        </div>
+
+        {% if rejection_breakdown %}
+        <div class="bg-gray-800 border border-gray-700 rounded-2xl p-6 mb-6">
+            <h2 class="text-lg font-bold text-white mb-4">Rejection Reason Breakdown</h2>
+            <div class="space-y-3">
+                {% for reason, count in rejection_breakdown.items %}
+                <div class="flex items-center gap-3">
+                    <div class="flex-1">
+                        <div class="flex justify-between mb-1">
+                            <span class="text-gray-300 text-sm">{{ reason }}</span>
+                            <span class="text-gray-500 text-sm">{{ count }}</span>
+                        </div>
+                        <div class="w-full bg-gray-700 rounded-full h-2">
+                            {% widthratio count total 100 as pct %}
+                            <div class="bg-red-500 h-2 rounded-full" style="width: {% widthratio count total 100 %}%"></div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if candidates %}
+        <div class="space-y-4">
+            {% for c in candidates %}
+            <div class="bg-gray-800 border border-gray-700 rounded-2xl p-6 hover:border-red-600 transition">
+                <div class="flex justify-between items-start">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-3 mb-2">
+                            <h3 class="text-lg font-bold text-white">{{ c.application.full_name }}</h3>
+                            {% if c.match_score %}
+                            <span class="px-2 py-1 bg-red-900 text-red-300 text-xs font-semibold rounded-full">Score: {{ c.match_score }}%</span>
+                            {% endif %}
+                        </div>
+                        <p class="text-gray-400 text-sm">{{ c.application.email }} &middot; {{ c.application.phone }}</p>
+                        <p class="text-gray-500 text-xs mt-1">Applied {{ c.application.applied_at|timesince }} ago</p>
+                    </div>
+                    <a href="{% url 'internships:job_application_detail' c.application.pk %}" class="text-indigo-400 hover:text-indigo-300 text-sm">View Details &rarr;</a>
+                </div>
+                
+                {% if c.tags %}
+                <div class="mt-4">
+                    <p class="text-gray-500 text-xs uppercase tracking-wider mb-2">Rejection Reasons</p>
+                    <div class="flex flex-wrap gap-2">
+                        {% for tag in c.tags %}
+                        <span class="px-3 py-1 bg-red-900 bg-opacity-50 text-red-300 text-xs rounded-full">{{ tag }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if c.custom_remarks %}
+                <div class="mt-3 p-3 bg-gray-700 bg-opacity-50 rounded-xl">
+                    <p class="text-gray-400 text-sm">{{ c.custom_remarks }}</p>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="bg-gray-800 border border-gray-700 rounded-2xl p-12 text-center">
+            <svg class="w-16 h-16 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <p class="text-gray-400 text-lg">No rejected candidates yet</p>
+        </div>
+        {% endif %}
+    </main>
+</div>
+{% endblock %}

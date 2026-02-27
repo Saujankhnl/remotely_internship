@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+{% block title %}<title>Smart Sort - {{ job.title }} - Remotely</title>{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <nav class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <a href="{% url 'internships:view_job_applications' job.pk %}" class="flex items-center gap-2 text-gray-300 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                Back to Applications
+            </a>
+            <div class="flex items-center gap-3">
+                <a href="{% url 'internships:screening_analytics' job.pk %}" class="text-indigo-400 hover:text-indigo-300 text-sm">Analytics</a>
+                <a href="{% url 'internships:ranked_applicants' job.pk %}" class="text-yellow-400 hover:text-yellow-300 text-sm">ATS Rankings</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-6xl mx-auto px-4 py-6">
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-2xl font-bold text-white">Smart Sort Applicants</h1>
+                <p class="text-gray-400">{{ job.title }}</p>
+            </div>
+
+            <!-- Auto-screening actions -->
+            <div class="flex items-center gap-3">
+                <form method="post" action="{% url 'internships:run_auto_screening' job.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm rounded-xl">
+                        Run Screening
+                    </button>
+                </form>
+                <form method="post" action="{% url 'internships:apply_auto_screening' job.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-xl"
+                            onclick="return confirm('This will auto-categorize pending applications. Continue?')">
+                        Auto-Categorize
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Filters & Sorting -->
+        <div class="bg-gray-800 border border-gray-700 rounded-2xl p-4 mb-6">
+            <form method="get" class="flex flex-wrap items-center gap-4">
+                <div>
+                    <label class="text-gray-500 text-xs">Sort By</label>
+                    <select name="sort" class="bg-gray-700 border border-gray-600 rounded-lg text-white text-sm px-3 py-2">
+                        <option value="score" {% if sort_by == 'score' %}selected{% endif %}>Match Score</option>
+                        <option value="date" {% if sort_by == 'date' %}selected{% endif %}>Applied Date</option>
+                        <option value="name" {% if sort_by == 'name' %}selected{% endif %}>Name</option>
+                        <option value="experience" {% if sort_by == 'experience' %}selected{% endif %}>Experience</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-gray-500 text-xs">Order</label>
+                    <select name="order" class="bg-gray-700 border border-gray-600 rounded-lg text-white text-sm px-3 py-2">
+                        <option value="desc" {% if order == 'desc' %}selected{% endif %}>Descending</option>
+                        <option value="asc" {% if order == 'asc' %}selected{% endif %}>Ascending</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-gray-500 text-xs">Filter Status</label>
+                    <select name="status" class="bg-gray-700 border border-gray-600 rounded-lg text-white text-sm px-3 py-2">
+                        <option value="">All Statuses</option>
+                        {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if filter_status == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="mt-4 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-lg">Apply</button>
+            </form>
+        </div>
+
+        <!-- Applicant Cards -->
+        {% for item in page_obj %}
+        <div class="bg-gray-800 border border-gray-700 rounded-2xl p-5 mb-4 hover:border-indigo-600 transition">
+            <div class="flex justify-between items-start">
+                <div class="flex-1">
+                    <div class="flex items-center gap-3 mb-2">
+                        <h3 class="text-lg font-bold text-white">{{ item.application.full_name }}</h3>
+                        <span class="px-2 py-1 rounded-full text-xs font-semibold
+                            {% if item.application.match_score >= 70 %}bg-green-900 text-green-300
+                            {% elif item.application.match_score >= 40 %}bg-yellow-900 text-yellow-300
+                            {% else %}bg-red-900 text-red-300{% endif %}">
+                            Score: {{ item.application.match_score }}%
+                        </span>
+                        <span class="px-2 py-1 rounded-full text-xs
+                            {% if item.application.status == 'accepted' %}bg-green-900 text-green-300
+                            {% elif item.application.status == 'rejected' %}bg-red-900 text-red-300
+                            {% elif item.application.status == 'shortlisted' %}bg-yellow-900 text-yellow-300
+                            {% elif item.application.status == 'on_hold' %}bg-orange-900 text-orange-300
+                            {% elif item.application.status == 'interview' %}bg-purple-900 text-purple-300
+                            {% else %}bg-gray-600 text-gray-300{% endif %}">
+                            {{ item.application.get_status_display }}
+                        </span>
+                        {% if item.application.auto_status %}
+                        <span class="px-2 py-1 bg-gray-600 text-gray-400 text-xs rounded-full">
+                            AI: {{ item.application.auto_status }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    <p class="text-gray-400 text-sm">{{ item.application.email }} &middot; {{ item.application.years_of_experience }} yrs exp</p>
+                    <p class="text-gray-500 text-xs mt-1">Applied {{ item.application.applied_at|timesince }} ago</p>
+                </div>
+                <a href="{% url 'internships:job_application_detail' item.application.pk %}" class="text-indigo-400 hover:text-indigo-300 text-sm">Details &rarr;</a>
+            </div>
+
+            {% if item.screening %}
+            <div class="mt-4 grid grid-cols-3 sm:grid-cols-5 gap-3">
+                <div class="text-center">
+                    <p class="text-xs text-gray-500">Skills</p>
+                    <p class="text-sm font-semibold {% if item.screening.skill_score >= 70 %}text-green-400{% elif item.screening.skill_score >= 40 %}text-yellow-400{% else %}text-red-400{% endif %}">{{ item.screening.skill_score }}%</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-xs text-gray-500">Course</p>
+                    <p class="text-sm font-semibold {% if item.screening.course_score >= 70 %}text-green-400{% elif item.screening.course_score >= 40 %}text-yellow-400{% else %}text-red-400{% endif %}">{{ item.screening.course_score }}%</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-xs text-gray-500">Experience</p>
+                    <p class="text-sm font-semibold {% if item.screening.experience_score >= 70 %}text-green-400{% elif item.screening.experience_score >= 40 %}text-yellow-400{% else %}text-red-400{% endif %}">{{ item.screening.experience_score }}%</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-xs text-gray-500">English</p>
+                    <p class="text-sm font-semibold {% if item.screening.english_score >= 70 %}text-green-400{% elif item.screening.english_score >= 40 %}text-yellow-400{% else %}text-red-400{% endif %}">{{ item.screening.english_score }}%</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-xs text-gray-500">Profile</p>
+                    <p class="text-sm font-semibold {% if item.screening.profile_score >= 70 %}text-green-400{% elif item.screening.profile_score >= 40 %}text-yellow-400{% else %}text-red-400{% endif %}">{{ item.screening.profile_score }}%</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% empty %}
+        <div class="bg-gray-800 border border-gray-700 rounded-2xl p-12 text-center">
+            <p class="text-gray-400 text-lg">No applicants found</p>
+        </div>
+        {% endfor %}
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <div class="flex justify-center gap-2 mt-6">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}&sort={{ sort_by }}&order={{ order }}&status={{ filter_status }}" class="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600">&laquo; Prev</a>
+            {% endif %}
+            <span class="px-4 py-2 bg-gray-800 text-gray-400 rounded-lg">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}&sort={{ sort_by }}&order={{ order }}&status={{ filter_status }}" class="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600">Next &raquo;</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </main>
+</div>
+{% endblock %}

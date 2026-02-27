@@ -37,6 +37,17 @@
             </form>
         </div>
 
+        <div class="flex flex-wrap gap-2 mt-4 mb-6">
+            <a href="{% url 'internships:accepted_candidates' job.pk %}" class="px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-xl">Accepted</a>
+            <a href="{% url 'internships:rejected_candidates' job.pk %}" class="px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-xl">Rejected</a>
+            <a href="{% url 'internships:smart_sorted_applicants' job.pk %}" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm rounded-xl">Smart Sort</a>
+            <a href="{% url 'internships:screening_analytics' job.pk %}" class="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-xl">Analytics</a>
+            <form method="post" action="{% url 'internships:run_auto_screening' job.pk %}" class="inline">
+                {% csrf_token %}
+                <button type="submit" class="px-3 py-2 bg-yellow-600 hover:bg-yellow-700 text-white text-sm rounded-xl">Run Screening</button>
+            </form>
+        </div>
+
         <div class="grid gap-4">
             {% for app in page_obj %}
             <a href="{% url 'internships:job_application_detail' app.pk %}" class="block bg-gray-800 border border-gray-700 rounded-xl p-5 hover:border-indigo-500 transition">
