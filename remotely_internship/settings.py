@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-+yg(e#15fk=t(52_17eku7^gh-p+e1qs!-gh%yt-doi)53px^z
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'testserver']
 
 
 # Application definition
@@ -56,9 +56,7 @@ INSTALLED_APPS = [
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
-    # Google provider requires PyJWT (provides 'jwt' module). 
-    # Remove or install PyJWT if you want Google login.
-    # 'allauth.socialaccount.providers.google',
+    'allauth.socialaccount.providers.google',
     'allauth.socialaccount.providers.linkedin_oauth2',
 ]
 

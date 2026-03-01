@@ -53,16 +53,18 @@
             <a href="{% url 'accounts:forgot_password' %}" class="text-red-500 active:text-red-600">Forgot Password?</a>
         </p>
 
-        <!-- Social Login Divider -->
+        <!-- Social Login Buttons -->
+        {% load socialaccount %}
+        {% get_providers as socialaccount_providers %}
+        {% if socialaccount_providers %}
         <div class="flex items-center my-6">
             <div class="flex-1 border-t border-gray-300"></div>
             <span class="px-4 text-sm text-gray-500">OR</span>
             <div class="flex-1 border-t border-gray-300"></div>
         </div>
-
-        <!-- Social Login Buttons -->
-        {% load socialaccount %}
         <div class="flex flex-col gap-3">
+            {% for provider in socialaccount_providers %}
+            {% if provider.id == 'google' %}
             <a href="{% provider_login_url 'google' %}"
                class="flex items-center justify-center gap-3 w-full border border-gray-300 rounded-xl py-3 px-4 text-gray-700 font-semibold hover:bg-gray-50 transition duration-200">
                 <svg class="w-5 h-5" viewBox="0 0 24 24">
@@ -73,6 +75,7 @@
                 </svg>
                 Continue with Google
             </a>
+            {% elif provider.id == 'linkedin_oauth2' %}
             <a href="{% provider_login_url 'linkedin_oauth2' %}"
                class="flex items-center justify-center gap-3 w-full border border-gray-300 rounded-xl py-3 px-4 text-gray-700 font-semibold hover:bg-gray-50 transition duration-200">
                 <svg class="w-5 h-5" fill="#0A66C2" viewBox="0 0 24 24">
@@ -80,7 +83,10 @@
                 </svg>
                 Continue with LinkedIn
             </a>
+            {% endif %}
+            {% endfor %}
         </div>
+        {% endif %}
 
         <p class="text-center text-gray-600 mt-5 text-sm">
             Don't have an account? 
