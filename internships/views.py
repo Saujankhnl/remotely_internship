@@ -218,7 +218,9 @@ def application_detail(request, pk):
         return HttpResponseForbidden("You don't have permission to view this application.")
     
     return render(request, 'internships/application_detail.html', {
-        'application': application
+        'application': application,
+        'rejection_tags': RejectionTag.objects.filter(is_active=True),
+        'acceptance_tags': AcceptanceTag.objects.filter(is_active=True),
     })
 
 
@@ -606,7 +608,9 @@ def job_application_detail(request, pk):
         raise PermissionDenied("You don't have permission to view this application.")
     
     return render(request, 'internships/job_application_detail.html', {
-        'application': application
+        'application': application,
+        'rejection_tags': RejectionTag.objects.filter(is_active=True),
+        'acceptance_tags': AcceptanceTag.objects.filter(is_active=True),
     })
 
 

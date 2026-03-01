@@ -37,6 +37,22 @@
                 </div>
                 <div class="flex items-center gap-2"><label class="text-gray-300">{{ form.is_remote }} Remote Position</label></div>
                 <div><label class="block text-gray-300 mb-2">Benefits</label>{{ form.benefits }}</div>
+                <div class="border-t border-gray-700 pt-5 mt-5">
+                    <h3 class="text-lg font-bold text-white mb-4">Screening & Premium Settings</h3>
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div class="flex items-center gap-2"><label class="text-gray-300">{{ form.is_premium }} Premium Listing</label></div>
+                        <div class="flex items-center gap-2"><label class="text-gray-300">{{ form.auto_screen_enabled }} Auto-Screen Applicants</label></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="block text-gray-300 mb-2">Preferred Course</label>{{ form.required_course }}</div>
+                        <div><label class="block text-gray-300 mb-2">Minimum GPA</label>{{ form.min_gpa }}</div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mt-4">
+                        <div><label class="block text-gray-300 mb-2">English Level</label>{{ form.preferred_english_level }}</div>
+                        <div><label class="block text-gray-300 mb-2">Internet Quality</label>{{ form.preferred_internet_quality }}</div>
+                    </div>
+                    <div class="mt-4"><label class="block text-gray-300 mb-2">Preferred Location</label>{{ form.preferred_location }}</div>
+                </div>
                 <div><label class="block text-gray-300 mb-2">Application Deadline</label>{{ form.deadline }}</div>
                 <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-xl font-bold">Post Job</button>
             </form>

@@ -30,12 +30,9 @@
             <div class="p-3 bg-gray-700 rounded-xl mb-2">
                 <p class="text-gray-300 text-sm whitespace-pre-line">{{ sr.skill_gaps }}</p>
                 {% if sr.missing_skills %}
-                <div class="mt-2 flex flex-wrap gap-2">
-                    {% for skill in sr.missing_skills.split:", " %}
-                    {% if skill.strip %}
-                    <span class="px-2 py-1 bg-indigo-900 text-indigo-300 text-xs rounded-full">{{ skill }}</span>
-                    {% endif %}
-                    {% endfor %}
+                <div class="mt-2">
+                    <p class="text-gray-500 text-xs uppercase tracking-wider mb-1">Missing Skills</p>
+                    <p class="text-indigo-300 text-sm">{{ sr.missing_skills }}</p>
                 </div>
                 {% endif %}
             </div>
@@ -65,13 +62,7 @@
                     {% if fb.suggested_skills %}
                     <div class="mt-3">
                         <p class="text-gray-500 text-xs uppercase tracking-wider mb-2">Skills to Improve</p>
-                        <div class="flex flex-wrap gap-2">
-                            {% for skill in fb.suggested_skills.split:", " %}
-                            {% if skill.strip %}
-                            <span class="px-2 py-1 bg-yellow-900 text-yellow-300 text-xs rounded-full">{{ skill }}</span>
-                            {% endif %}
-                            {% endfor %}
-                        </div>
+                        <p class="text-yellow-300 text-sm">{{ fb.suggested_skills }}</p>
                     </div>
                     {% endif %}
                 </div>
@@ -102,13 +93,7 @@
                     {% if fb.suggested_skills %}
                     <div class="mt-3">
                         <p class="text-gray-500 text-xs uppercase tracking-wider mb-2">Skills to Improve</p>
-                        <div class="flex flex-wrap gap-2">
-                            {% for skill in fb.suggested_skills.split:", " %}
-                            {% if skill.strip %}
-                            <span class="px-2 py-1 bg-yellow-900 text-yellow-300 text-xs rounded-full">{{ skill }}</span>
-                            {% endif %}
-                            {% endfor %}
-                        </div>
+                        <p class="text-yellow-300 text-sm">{{ fb.suggested_skills }}</p>
                     </div>
                     {% endif %}
                 </div>
