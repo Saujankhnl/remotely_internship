@@ -11,13 +11,18 @@ from datetime import timedelta
 from .models import (
     Internship, Application, Job, JobApplication, JobBookmark, JobView,
     Interview, StatusChange, RejectionTag, AcceptanceTag, ApplicationRemark,
-    AutoScreeningResult, CandidateFeedback,
+    AutoScreeningResult, CandidateFeedback, JobCategory, SavedSearch, SearchLog,
 )
 from .forms import (
     InternshipForm, ApplicationForm, JobForm, JobApplicationForm,
     InterviewForm, ApplicationRemarkForm, CandidateFeedbackForm,
 )
 from .emails import send_application_status_email, send_interview_scheduled_email
+from .search import (
+    search_jobs, search_internships, parse_smart_query,
+    calculate_skill_match, get_auto_suggestions, get_trending_searches,
+    get_recommended_jobs, get_all_available_skills, get_all_locations,
+)
 from accounts.decorators import company_approved_required, user_required, company_required
 from notifications.services import (
     notify_application_status_change, notify_interview_scheduled,
@@ -1467,4 +1472,150 @@ def smart_sorted_applicants(request, pk):
         'order': order,
         'filter_status': filter_status,
         'status_choices': JobApplication.STATUS_CHOICES,
+    })
+
+
+# ==================== ADVANCED SEARCH ====================
+
+def advanced_search(request):
+    """Unified advanced search page for jobs and internships"""
+    search_type = request.GET.get('search_type', 'jobs')
+    
+    # Get user skills for match percentage
+    user_skills = ''
+    if request.user.is_authenticated and request.user.user_type == 'user':
+        try:
+            from accounts.models import UserProfile
+            profile = UserProfile.objects.get(user=request.user)
+            user_skills = profile.skills or ''
+        except Exception:
+            pass
+    
+    if search_type == 'internships':
+        result = search_internships(request)
+        queryset = result['queryset']
+    else:
+        result = search_jobs(request)
+        queryset = result['queryset']
+    
+    # Pagination
+    paginator = Paginator(queryset, 12)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Attach skill match info to each result
+    results_with_match = []
+    for item in page_obj:
+        match_info = calculate_skill_match(user_skills, item.required_skills) if user_skills else None
+        results_with_match.append({
+            'item': item,
+            'match_info': match_info,
+        })
+    
+    # Get filter options
+    categories = JobCategory.objects.filter(is_active=True)
+    available_skills = get_all_available_skills()
+    trending = get_trending_searches(days=7, limit=8)
+    
+    # Saved searches for logged-in users
+    saved_searches = []
+    if request.user.is_authenticated:
+        saved_searches = SavedSearch.objects.filter(user=request.user)[:10]
+    
+    context = {
+        'page_obj': page_obj,
+        'results_with_match': results_with_match,
+        'search_type': search_type,
+        'query': result['query'],
+        'parsed': result['parsed'],
+        'filters': result['filters'],
+        'categories': categories,
+        'available_skills': available_skills,
+        'trending_searches': trending,
+        'saved_searches': saved_searches,
+        'user_skills': user_skills,
+        'query_string': _build_query_string(request),
+        'job_type_choices': Job.JOB_TYPE_CHOICES,
+        'experience_choices': Job.EXPERIENCE_CHOICES,
+        'work_mode_choices': [('remote', 'Remote'), ('hybrid', 'Hybrid'), ('onsite', 'On-site')],
+    }
+    
+    return render(request, 'internships/advanced_search.html', context)
+
+
+def search_suggestions_api(request):
+    """AJAX endpoint for search auto-suggestions"""
+    query = request.GET.get('q', '')
+    suggestions = get_auto_suggestions(query, limit=8)
+    return JsonResponse(suggestions)
+
+
+def trending_searches_api(request):
+    """AJAX endpoint for trending searches"""
+    trending = get_trending_searches(days=7, limit=10)
+    return JsonResponse({'trending': trending})
+
+
+@login_required
+@require_POST
+def save_search(request):
+    """Save current search configuration"""
+    import json
+    name = request.POST.get('name', '').strip()
+    if not name:
+        return JsonResponse({'error': 'Search name is required'}, status=400)
+    
+    query = request.POST.get('query', '')
+    filters_str = request.POST.get('filters', '{}')
+    alert_enabled = request.POST.get('alert_enabled') == 'true'
+    
+    try:
+        filters = json.loads(filters_str)
+    except (json.JSONDecodeError, TypeError):
+        filters = {}
+    
+    saved = SavedSearch.objects.create(
+        user=request.user,
+        name=name,
+        query=query,
+        filters=filters,
+        alert_enabled=alert_enabled,
+    )
+    
+    return JsonResponse({
+        'success': True,
+        'id': saved.pk,
+        'message': 'Search saved successfully!',
+    })
+
+
+@login_required
+@require_POST
+def delete_saved_search(request, pk):
+    """Delete a saved search"""
+    saved = get_object_or_404(SavedSearch, pk=pk, user=request.user)
+    saved.delete()
+    return JsonResponse({'success': True, 'message': 'Saved search deleted.'})
+
+
+@login_required
+@require_POST
+def toggle_search_alert(request, pk):
+    """Toggle email alert for a saved search"""
+    saved = get_object_or_404(SavedSearch, pk=pk, user=request.user)
+    saved.alert_enabled = not saved.alert_enabled
+    saved.save(update_fields=['alert_enabled'])
+    return JsonResponse({
+        'success': True,
+        'alert_enabled': saved.alert_enabled,
+        'message': f'Alerts {"enabled" if saved.alert_enabled else "disabled"}.',
+    })
+
+
+@login_required
+def my_saved_searches(request):
+    """View all saved searches"""
+    saved_searches = SavedSearch.objects.filter(user=request.user)
+    return render(request, 'internships/saved_searches.html', {
+        'saved_searches': saved_searches,
     })

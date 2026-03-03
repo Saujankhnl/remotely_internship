@@ -47,6 +47,13 @@ class Job(models.Model):
     # Location & Contact
     location = models.CharField(max_length=200)
     is_remote = models.BooleanField(default=False)
+    WORK_MODE_CHOICES = (
+        ('remote', 'Remote'),
+        ('hybrid', 'Hybrid'),
+        ('onsite', 'On-site'),
+    )
+    work_mode = models.CharField(max_length=10, choices=WORK_MODE_CHOICES, default='onsite')
+    category = models.ForeignKey('JobCategory', on_delete=models.SET_NULL, null=True, blank=True, related_name='jobs')
     email = models.EmailField()
     
     # Additional
@@ -200,6 +207,13 @@ class Internship(models.Model):
     
     # Location & Contact
     location = models.CharField(max_length=200)
+    WORK_MODE_CHOICES = (
+        ('remote', 'Remote'),
+        ('hybrid', 'Hybrid'),
+        ('onsite', 'On-site'),
+    )
+    work_mode = models.CharField(max_length=10, choices=WORK_MODE_CHOICES, default='onsite')
+    category = models.ForeignKey('JobCategory', on_delete=models.SET_NULL, null=True, blank=True, related_name='internships')
     email = models.EmailField()
     
     # Optional fields
@@ -580,3 +594,67 @@ class CandidateFeedback(models.Model):
     def __str__(self):
         app = self.job_application or self.internship_application
         return f"Feedback for {app}"
+
+
+class JobCategory(models.Model):
+    """Job/Internship categories for filtering"""
+    name = models.CharField(max_length=100, unique=True)
+    slug = models.SlugField(max_length=100, unique=True)
+    icon = models.CharField(max_length=50, blank=True, help_text="CSS icon class")
+    sort_order = models.PositiveSmallIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['sort_order', 'name']
+        verbose_name = "Job Category"
+        verbose_name_plural = "Job Categories"
+
+    def __str__(self):
+        return self.name
+
+
+class SavedSearch(models.Model):
+    """Saved search configurations for job alerts"""
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='saved_searches'
+    )
+    name = models.CharField(max_length=100)
+    query = models.CharField(max_length=500, blank=True)
+    filters = models.JSONField(default=dict, blank=True, help_text="Stored filter parameters")
+    alert_enabled = models.BooleanField(default=False, help_text="Receive email alerts for new matches")
+    last_alerted = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Saved Search"
+        verbose_name_plural = "Saved Searches"
+
+    def __str__(self):
+        return f"{self.user.username} - {self.name}"
+
+
+class SearchLog(models.Model):
+    """Track searches for trending and analytics"""
+    query = models.CharField(max_length=500)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True
+    )
+    results_count = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['query', 'created_at']),
+        ]
+        verbose_name = "Search Log"
+        verbose_name_plural = "Search Logs"
+
+    def __str__(self):
+        return f"{self.query} ({self.results_count} results)"

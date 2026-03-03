@@ -79,4 +79,13 @@ urlpatterns = [
     
     # ==================== CANDIDATE FEEDBACK ====================
     path('my-feedback/', views.my_feedback, name='my_feedback'),
+
+    # ==================== ADVANCED SEARCH ====================
+    path('search/', views.advanced_search, name='advanced_search'),
+    path('api/search-suggestions/', views.search_suggestions_api, name='search_suggestions_api'),
+    path('api/trending-searches/', views.trending_searches_api, name='trending_searches_api'),
+    path('api/save-search/', views.save_search, name='save_search'),
+    path('api/saved-search/<int:pk>/delete/', views.delete_saved_search, name='delete_saved_search'),
+    path('api/saved-search/<int:pk>/toggle-alert/', views.toggle_search_alert, name='toggle_search_alert'),
+    path('saved-searches/', views.my_saved_searches, name='my_saved_searches'),
 ]

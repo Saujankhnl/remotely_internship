@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}<title>Saved Searches - Remotely</title>{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <nav class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <a href="{% url 'internships:internship_list' %}" class="text-xl sm:text-2xl font-bold text-white">Remotely</a>
+            <div class="flex items-center gap-3">
+                <a href="{% url 'internships:advanced_search' %}" class="text-gray-300 hover:text-white text-sm">Search</a>
+                <a href="{% url 'accounts:dashboard' %}" class="text-gray-300 hover:text-white text-sm">Dashboard</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 py-6">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-3">
+            <h1 class="text-3xl font-bold text-white">
+                My Saved Searches
+                <span id="saved-search-count" class="text-lg font-normal text-gray-400 ml-2">({{ saved_searches|length }})</span>
+            </h1>
+            <a href="{% url 'internships:advanced_search' %}" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                Advanced Search
+            </a>
+        </div>
+
+        <!-- Hidden form for CSRF token -->
+        <form id="csrf-form" style="display:none;">{% csrf_token %}</form>
+
+        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {% for search in saved_searches %}
+            <div data-search-card="{{ search.pk }}" class="bg-gray-800 border border-gray-700 rounded-2xl p-5 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-start justify-between mb-3">
+                        <h3 class="text-lg font-bold text-white break-words pr-2">{{ search.name }}</h3>
+                        <div class="flex items-center gap-2 flex-shrink-0">
+                            <!-- Alert toggle -->
+                            <button
+                                data-toggle-alert="{{ search.pk }}"
+                                class="p-1.5 rounded-lg transition {% if search.alert_enabled %}text-yellow-400 bg-yellow-400/10 hover:bg-yellow-400/20{% else %}text-gray-500 hover:text-gray-400 hover:bg-gray-700{% endif %}"
+                                title="{% if search.alert_enabled %}Disable alerts{% else %}Enable alerts{% endif %}"
+                            >
+                                <svg class="w-5 h-5" fill="{% if search.alert_enabled %}currentColor{% else %}none{% endif %}" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                                </svg>
+                            </button>
+                            <!-- Delete button -->
+                            <button
+                                data-delete-search="{{ search.pk }}"
+                                class="p-1.5 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-400/10 transition"
+                                title="Delete saved search"
+                            >
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    {% if search.query %}
+                    <p class="text-gray-300 text-sm mb-2">
+                        <span class="text-gray-500">Query:</span> "{{ search.query }}"
+                    </p>
+                    {% endif %}
+
+                    {% if search.filters %}
+                    <div class="flex flex-wrap gap-1.5 mb-3">
+                        {% for key, value in search.filters.items %}
+                            {% if value %}
+                            <span class="bg-gray-700 text-gray-300 text-xs px-2.5 py-1 rounded-full">
+                                {{ key }}: {{ value }}
+                            </span>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <p class="text-gray-500 text-xs">Saved {{ search.created_at|timesince }} ago</p>
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-gray-700">
+                    <a href="{% url 'internships:advanced_search' %}?q={{ search.query|urlencode }}{% for key, value in search.filters.items %}{% if value %}&{{ key }}={{ value|urlencode }}{% endif %}{% endfor %}"
+                       class="inline-flex items-center gap-2 text-indigo-400 hover:text-indigo-300 text-sm font-semibold transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        Search Again
+                    </a>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-span-full text-center py-12">
+                <svg class="w-16 h-16 text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                <h3 class="text-xl font-semibold text-gray-400 mb-2">No saved searches yet</h3>
+                <p class="text-gray-500 mb-4">Use Advanced Search and save your queries for quick access</p>
+                <a href="{% url 'internships:advanced_search' %}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-semibold">Advanced Search</a>
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+</div>
+
+<script src="{% static 'internships/js/saved-searches.js' %}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        SavedSearches.init({
+            deleteUrlBase: "/internships/api/saved-search/",
+            toggleUrlBase: "/internships/api/saved-search/",
+        });
+    });
+</script>
+{% endblock %}

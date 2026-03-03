@@ -2,14 +2,14 @@ from django.contrib import admin
 from .models import (
     Internship, Application, Job, JobApplication, JobBookmark, JobView,
     Interview, StatusChange, RejectionTag, AcceptanceTag, ApplicationRemark,
-    AutoScreeningResult, CandidateFeedback,
+    AutoScreeningResult, CandidateFeedback, JobCategory, SavedSearch, SearchLog,
 )
 
 
 @admin.register(Job)
 class JobAdmin(admin.ModelAdmin):
-    list_display = ('title', 'company', 'job_type', 'experience_level', 'is_remote', 'is_premium', 'auto_screen_enabled', 'status', 'application_count', 'created_at')
-    list_filter = ('job_type', 'experience_level', 'is_remote', 'is_premium', 'auto_screen_enabled', 'status')
+    list_display = ('title', 'company', 'job_type', 'experience_level', 'work_mode', 'category', 'is_remote', 'is_premium', 'auto_screen_enabled', 'status', 'application_count', 'created_at')
+    list_filter = ('job_type', 'experience_level', 'work_mode', 'category', 'is_remote', 'is_premium', 'auto_screen_enabled', 'status')
     search_fields = ('title', 'company__username', 'required_skills', 'location')
     readonly_fields = ('created_at', 'updated_at')
     ordering = ('-created_at',)
@@ -53,16 +53,16 @@ class InterviewAdmin(admin.ModelAdmin):
 
 @admin.register(Internship)
 class InternshipAdmin(admin.ModelAdmin):
-    list_display = ('title', 'company', 'internship_type', 'is_premium', 'location', 'status', 'application_count', 'created_at')
-    list_filter = ('internship_type', 'is_premium', 'status', 'created_at')
+    list_display = ('title', 'company', 'internship_type', 'work_mode', 'category', 'is_premium', 'location', 'status', 'application_count', 'created_at')
+    list_filter = ('internship_type', 'work_mode', 'category', 'is_premium', 'status', 'created_at')
     search_fields = ('title', 'company__username', 'required_skills', 'location')
     readonly_fields = ('created_at', 'updated_at')
     ordering = ('-created_at',)
     
     fieldsets = (
-        ('Basic Info', {'fields': ('company', 'title', 'description', 'internship_type', 'status')}),
+        ('Basic Info', {'fields': ('company', 'title', 'description', 'internship_type', 'category', 'status')}),
         ('Requirements', {'fields': ('required_skills', 'qualifications', 'experience')}),
-        ('Location & Contact', {'fields': ('location', 'email')}),
+        ('Location & Contact', {'fields': ('location', 'work_mode', 'email')}),
         ('Additional', {'fields': ('salary', 'duration')}),
         ('Timestamps', {'fields': ('created_at', 'updated_at')}),
     )
@@ -136,4 +136,28 @@ class CandidateFeedbackAdmin(admin.ModelAdmin):
     list_display = ('job_application', 'internship_application', 'feedback_type', 'is_visible', 'created_by', 'created_at')
     list_filter = ('feedback_type', 'is_visible', 'created_at')
     search_fields = ('message', 'suggested_skills')
+    readonly_fields = ('created_at',)
+
+
+@admin.register(JobCategory)
+class JobCategoryAdmin(admin.ModelAdmin):
+    list_display = ('name', 'slug', 'is_active', 'sort_order')
+    list_filter = ('is_active',)
+    search_fields = ('name',)
+    prepopulated_fields = {'slug': ('name',)}
+
+
+@admin.register(SavedSearch)
+class SavedSearchAdmin(admin.ModelAdmin):
+    list_display = ('user', 'name', 'query', 'alert_enabled', 'created_at')
+    list_filter = ('alert_enabled', 'created_at')
+    search_fields = ('user__username', 'name', 'query')
+    readonly_fields = ('created_at', 'updated_at')
+
+
+@admin.register(SearchLog)
+class SearchLogAdmin(admin.ModelAdmin):
+    list_display = ('query', 'user', 'results_count', 'created_at')
+    list_filter = ('created_at',)
+    search_fields = ('query', 'user__username')
     readonly_fields = ('created_at',)
