@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.http import HttpResponseForbidden, Http404, JsonResponse
+from django.http import HttpResponseForbidden, JsonResponse
 from django.db.models import Q, Count
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
@@ -11,17 +11,17 @@ from datetime import timedelta
 from .models import (
     Internship, Application, Job, JobApplication, JobBookmark, JobView,
     Interview, StatusChange, RejectionTag, AcceptanceTag, ApplicationRemark,
-    AutoScreeningResult, CandidateFeedback, JobCategory, SavedSearch, SearchLog,
+    AutoScreeningResult, CandidateFeedback, JobCategory, SavedSearch,
 )
 from .forms import (
     InternshipForm, ApplicationForm, JobForm, JobApplicationForm,
-    InterviewForm, ApplicationRemarkForm, CandidateFeedbackForm,
+    InterviewForm,
 )
 from .emails import send_application_status_email, send_interview_scheduled_email
 from .search import (
-    search_jobs, search_internships, parse_smart_query,
+    search_jobs, search_internships,
     calculate_skill_match, get_auto_suggestions, get_trending_searches,
-    get_recommended_jobs, get_all_available_skills, get_all_locations,
+    get_all_available_skills,
 )
 from accounts.decorators import company_approved_required, user_required, company_required
 from notifications.services import (
@@ -910,10 +910,6 @@ def job_analytics(request, pk):
 @company_required
 def company_dashboard_analytics(request):
     """Company-wide analytics dashboard"""
-    from django.db.models.functions import TruncDate
-    from django.utils import timezone
-    from datetime import timedelta
-    
     jobs = Job.objects.filter(company=request.user)
     
     total_jobs = jobs.count()
@@ -1571,6 +1567,8 @@ def save_search(request):
     
     try:
         filters = json.loads(filters_str)
+        if not isinstance(filters, dict):
+            filters = {}
     except (json.JSONDecodeError, TypeError):
         filters = {}
     
