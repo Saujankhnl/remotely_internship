@@ -19,7 +19,7 @@ const SavedSearches = {
     /* ── helpers ───────────────────────────────────────────── */
 
     _getCSRFToken() {
-        const el = document.querySelector('[name=csrfmiddlewaretoken]');
+        const el = document.querySelector('#csrf-form [name=csrfmiddlewaretoken]');
         return el ? el.value : '';
     },
 

@@ -144,7 +144,7 @@ def dashboard(request):
             profile.save(update_fields=['completeness_score'])
         
         # Import here to avoid circular imports
-        from internships.models import Application, Internship, Job, JobApplication, JobBookmark, Interview
+        from internships.models import Application, Internship, Job, JobApplication, JobBookmark, Interview, SavedSearch
         from django.db.models import Count, Q
         
         # Get user's internship applications
@@ -184,6 +184,12 @@ def dashboard(request):
         
         # Get saved jobs count
         saved_jobs_count = JobBookmark.objects.filter(user=user).count()
+        
+        # Advanced search features
+        saved_searches_count = SavedSearch.objects.filter(user=user).count()
+        from internships.search import get_recommended_jobs
+        recommended_jobs_list = get_recommended_jobs(user, limit=5)
+        recommended_count = len(recommended_jobs_list)
         
         # New features: notifications, resumes, assessments, unread chats
         from notifications.models import Notification
@@ -227,6 +233,9 @@ def dashboard(request):
             'badges_count': badges_count,
             'available_assessments': available_assessments,
             'unread_chats': unread_chats,
+            'saved_searches_count': saved_searches_count,
+            'recommended_count': recommended_count,
+            'recommended_jobs': recommended_jobs_list[:3],
         })
         
     else:

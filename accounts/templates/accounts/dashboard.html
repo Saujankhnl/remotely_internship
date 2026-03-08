@@ -19,6 +19,7 @@
             <div class="flex items-center gap-3">
                 <a href="{% url 'internships:job_list' %}" class="text-gray-400 hover:text-white text-sm hidden sm:inline">Jobs</a>
                 <a href="{% url 'internships:internship_list' %}" class="text-gray-400 hover:text-white text-sm hidden sm:inline">Internships</a>
+                <a href="{% url 'internships:advanced_search' %}" class="text-indigo-400 hover:text-indigo-300 text-sm hidden sm:inline font-medium">🔍 Search</a>
                 {% if user.is_staff %}
                 <a href="{% url 'accounts:admin_dashboard' %}" class="text-yellow-400 hover:text-yellow-300 text-sm hidden sm:inline">Admin Panel</a>
                 {% endif %}
@@ -428,6 +429,91 @@
             </a>
         </div>
 
+        <!-- Search & Discovery -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <a href="{% url 'internships:advanced_search' %}" class="bg-gray-800 border border-gray-700 hover:border-indigo-500 rounded-xl p-4 transition group">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-indigo-500 bg-opacity-20 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-white group-hover:text-indigo-400 transition">Advanced Search</h3>
+                        <p class="text-gray-500 text-xs">Smart filters & skill matching</p>
+                    </div>
+                </div>
+            </a>
+            <a href="{% url 'internships:my_saved_searches' %}" class="bg-gray-800 border border-gray-700 hover:border-indigo-500 rounded-xl p-4 transition group">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-teal-500 bg-opacity-20 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path></svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-white group-hover:text-indigo-400 transition">Saved Searches</h3>
+                        <p class="text-gray-500 text-xs">{{ saved_searches_count }} saved search{{ saved_searches_count|pluralize:"es" }}</p>
+                    </div>
+                </div>
+            </a>
+            <a href="{% url 'internships:recommended_jobs' %}" class="bg-gray-800 border border-gray-700 hover:border-indigo-500 rounded-xl p-4 transition group">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-orange-500 bg-opacity-20 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-white group-hover:text-indigo-400 transition">Skill Match</h3>
+                        <p class="text-gray-500 text-xs">{{ recommended_count }} job{{ recommended_count|pluralize }} match your skills</p>
+                    </div>
+                </div>
+            </a>
+            <a href="{% url 'internships:my_feedback' %}" class="bg-gray-800 border border-gray-700 hover:border-indigo-500 rounded-xl p-4 transition group">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-violet-500 bg-opacity-20 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-white group-hover:text-indigo-400 transition">My Feedback</h3>
+                        <p class="text-gray-500 text-xs">Rejection reasons & skill gaps</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <!-- Recommended Jobs Preview -->
+        {% if recommended_jobs %}
+        <div class="bg-gray-800 border border-gray-700 rounded-2xl overflow-hidden mb-6">
+            <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                    <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                    Top Matches for You
+                </h2>
+                <a href="{% url 'internships:recommended_jobs' %}" class="text-indigo-400 hover:text-indigo-300 text-sm">View All &rarr;</a>
+            </div>
+            <div class="divide-y divide-gray-700">
+                {% for rec in recommended_jobs %}
+                <a href="{% url 'internships:job_detail' rec.job.pk %}" class="p-4 hover:bg-gray-750 transition flex items-center justify-between block">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2">
+                            <h3 class="font-semibold text-white truncate">{{ rec.job.title }}</h3>
+                            {% if rec.job.is_premium %}
+                            <span class="px-1.5 py-0.5 text-[10px] rounded bg-gradient-to-r from-yellow-500 to-amber-500 text-white font-semibold shrink-0">★</span>
+                            {% endif %}
+                        </div>
+                        <p class="text-gray-400 text-sm truncate">{{ rec.job.company.company_profile.company_name|default:rec.job.company.username }} · {{ rec.job.location }}</p>
+                        <div class="flex flex-wrap gap-1 mt-1">
+                            {% for skill in rec.matching_skills|slice:":4" %}
+                            <span class="px-1.5 py-0.5 bg-green-600/20 text-green-400 text-[10px] rounded">{{ skill }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="ml-3 text-right shrink-0">
+                        <span class="text-lg font-bold {% if rec.match_percentage >= 70 %}text-green-400{% elif rec.match_percentage >= 40 %}text-yellow-400{% else %}text-gray-400{% endif %}">{{ rec.match_percentage }}%</span>
+                        <p class="text-gray-500 text-xs">match</p>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
         <!-- New Features: Resume, Assessments, Chat -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <a href="{% url 'resume:resume_builder' %}" class="bg-gray-800 border border-gray-700 hover:border-indigo-500 rounded-xl p-4 transition group">
@@ -476,21 +562,10 @@
             </a>
         </div>
 
-        <!-- Feedback & Insights -->
+        <!-- Interviews -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <a href="{% url 'internships:my_feedback' %}" class="bg-gray-800 border border-gray-700 hover:border-indigo-500 rounded-xl p-4 transition group">
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="w-10 h-10 bg-violet-500 bg-opacity-20 rounded-lg flex items-center justify-center">
-                        <svg class="w-5 h-5 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    </div>
-                    <div>
-                        <h3 class="font-semibold text-white group-hover:text-indigo-400 transition">My Feedback</h3>
-                        <p class="text-gray-500 text-xs">Rejection reasons & skill gaps</p>
-                    </div>
-                </div>
-            </a>
             <a href="{% url 'internships:my_interviews' %}" class="bg-gray-800 border border-gray-700 hover:border-indigo-500 rounded-xl p-4 transition group">
-                <div class="flex items-center gap-3 mb-3">
+                <div class="flex items-center gap-3">
                     <div class="w-10 h-10 bg-purple-500 bg-opacity-20 rounded-lg flex items-center justify-center">
                         <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                     </div>

@@ -22,7 +22,7 @@ const AdvancedSearch = {
     /* ── helpers ───────────────────────────────────────────── */
 
     _getCSRFToken() {
-        const el = document.querySelector('[name=csrfmiddlewaretoken]');
+        const el = document.querySelector('#csrf-form [name=csrfmiddlewaretoken]');
         return el ? el.value : '';
     },
 
@@ -193,7 +193,16 @@ const AdvancedSearch = {
         const alertEnabled = document.getElementById('save-search-alert').checked;
         const params  = new URLSearchParams(window.location.search);
         const filters = {};
-        params.forEach((v, k) => { if (k !== 'q' && k !== 'page') filters[k] = v; });
+        params.forEach((v, k) => {
+            if (k === 'q' || k === 'page') return;
+            if (filters[k] === undefined) {
+                filters[k] = v;
+            } else if (Array.isArray(filters[k])) {
+                filters[k].push(v);
+            } else {
+                filters[k] = [filters[k], v];
+            }
+        });
 
         const body = new FormData();
         body.append('name',          name);

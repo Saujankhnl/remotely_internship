@@ -33,11 +33,11 @@
 
         <!-- Search Type Toggle -->
         <div class="flex gap-2 mb-6">
-            <a href="?search_type=jobs{% if query %}&q={{ query }}{% endif %}"
+            <a href="?search_type=jobs{% if query %}&q={{ query|urlencode }}{% endif %}"
                class="px-5 py-2.5 rounded-xl font-semibold text-sm transition {% if search_type == 'jobs' %}bg-indigo-600 text-white{% else %}bg-gray-700 text-gray-300 hover:bg-gray-600{% endif %}">
                 Jobs
             </a>
-            <a href="?search_type=internships{% if query %}&q={{ query }}{% endif %}"
+            <a href="?search_type=internships{% if query %}&q={{ query|urlencode }}{% endif %}"
                class="px-5 py-2.5 rounded-xl font-semibold text-sm transition {% if search_type == 'internships' %}bg-indigo-600 text-white{% else %}bg-gray-700 text-gray-300 hover:bg-gray-600{% endif %}">
                 Internships
             </a>
@@ -68,7 +68,7 @@
             <div class="mt-3 flex flex-wrap items-center gap-2">
                 <span class="text-gray-500 text-sm">Trending:</span>
                 {% for t in trending_searches %}
-                <a href="?search_type={{ search_type }}&q={{ t.query }}"
+                <a href="?search_type={{ search_type }}&q={{ t.query|urlencode }}"
                    class="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs rounded-full transition">
                     {{ t.query }}
                 </a>
@@ -280,7 +280,7 @@
             </div>
             <div class="flex flex-wrap gap-2">
                 {% for ss in saved_searches %}
-                <a href="?search_type={{ search_type }}&q={{ ss.query }}"
+                <a href="?search_type={{ search_type }}&q={{ ss.query|urlencode }}"
                    class="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs rounded-full border border-gray-600 transition flex items-center gap-1.5">
                     {{ ss.name }}
                     {% if ss.alert_enabled %}

@@ -77,8 +77,8 @@ def parse_smart_query(query_text):
     detected_skills = []
     for skill in sorted(COMMON_SKILLS, key=len, reverse=True):
         if len(skill) <= 3:
-            # Short skills need word boundary check
-            pattern = r'\b' + re.escape(skill) + r'\b'
+            # Short skills need boundary check (use lookarounds for non-word char skills like c++, c#)
+            pattern = r'(?<![a-zA-Z0-9])' + re.escape(skill) + r'(?![a-zA-Z0-9])'
             if re.search(pattern, remaining):
                 detected_skills.append(skill)
                 remaining = re.sub(pattern, ' ', remaining, count=1)
@@ -219,11 +219,16 @@ def search_jobs(request, queryset=None):
     if category:
         queryset = queryset.filter(category__slug=category)
 
-    # Skills filter (multi-select)
+    # Skills filter (multi-select, OR logic)
     skills = params.getlist('skills')
     if skills:
+        skills_q = Q()
         for skill in skills:
-            queryset = queryset.filter(required_skills__icontains=skill.strip())
+            s = skill.strip()
+            if s:
+                skills_q |= Q(required_skills__icontains=s)
+        if skills_q:
+            queryset = queryset.filter(skills_q)
 
     # Location
     location = params.get('location', '')
@@ -335,10 +340,16 @@ def search_internships(request, queryset=None):
     if category:
         queryset = queryset.filter(category__slug=category)
 
+    # Skills filter (multi-select, OR logic)
     skills = params.getlist('skills')
     if skills:
+        skills_q = Q()
         for skill in skills:
-            queryset = queryset.filter(required_skills__icontains=skill.strip())
+            s = skill.strip()
+            if s:
+                skills_q |= Q(required_skills__icontains=s)
+        if skills_q:
+            queryset = queryset.filter(skills_q)
 
     location = params.get('location', '')
     if location:
