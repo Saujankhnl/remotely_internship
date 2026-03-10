@@ -1,7 +1,6 @@
 import logging
 from decimal import Decimal
 
-from django.db.models import Q
 
 logger = logging.getLogger(__name__)
 

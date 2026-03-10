@@ -34,6 +34,13 @@ class UserRegisterForm(forms.ModelForm):
             'email': '',
         }
 
+    def clean_password(self):
+        password = self.cleaned_data.get('password')
+        if password:
+            from django.contrib.auth.password_validation import validate_password
+            validate_password(password)
+        return password
+
     def save(self, commit=True):
         user = super().save(commit=False)
         user.set_password(self.cleaned_data['password'])
@@ -76,6 +83,13 @@ class CompanyRegisterForm(forms.ModelForm):
             'username': '',
             'email': '',
         }
+
+    def clean_password(self):
+        password = self.cleaned_data.get('password')
+        if password:
+            from django.contrib.auth.password_validation import validate_password
+            validate_password(password)
+        return password
 
     def save(self, commit=True):
         user = super().save(commit=False)

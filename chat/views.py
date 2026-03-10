@@ -1,9 +1,8 @@
-from django.shortcuts import render, get_object_or_404, redirect
+from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponseForbidden
 from django.views.decorators.http import require_POST
 from django.db.models import Q, Max, Count, Subquery, OuterRef
-from django.utils import timezone
 
 from .models import ChatRoom, Message
 from internships.models import JobApplication
@@ -177,6 +176,15 @@ def upload_attachment(request, room_id):
     file = request.FILES.get('file')
     if not file:
         return JsonResponse({'error': 'No file provided'}, status=400)
+
+    max_size = 10 * 1024 * 1024  # 10MB
+    if file.size > max_size:
+        return JsonResponse({'error': 'File must be under 10MB'}, status=400)
+
+    allowed_extensions = {'pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'txt', 'csv', 'xlsx'}
+    ext = file.name.rsplit('.', 1)[-1].lower() if '.' in file.name else ''
+    if ext not in allowed_extensions:
+        return JsonResponse({'error': 'File type not allowed'}, status=400)
 
     content = request.POST.get('message', '') or file.name
     msg = Message.objects.create(

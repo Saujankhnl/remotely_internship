@@ -347,12 +347,12 @@ def dashboard(request):
 
 @login_required
 def logout_view(request):
-    logout(request)
+    if request.method == 'POST':
+        logout(request)
     return redirect('accounts:login_view')
 
 def forgot_password(request):
     error = None
-    success = None
     
     if request.method == 'POST':
         email = request.POST.get('email', '').strip().lower()
@@ -360,24 +360,26 @@ def forgot_password(request):
         if not email:
             error = "Please enter your email address."
         else:
-            try:
-                user = CustomUser.objects.get(email__iexact=email)
-                otp = f"{secrets.randbelow(1000000):06d}"
+            from django.core.cache import cache
+            cache_key = f'otp_rate:{email}'
+            if cache.get(cache_key):
+                error = "Please wait before requesting another OTP."
+            else:
+                try:
+                    user = CustomUser.objects.get(email__iexact=email)
+                    otp = f"{secrets.randbelow(1000000):06d}"
+                    
+                    PasswordResetOTP.create_otp(user, otp)
+                    request.session['reset_email'] = email
+                    cache.set(cache_key, True, 60)
+                    
+                    send_otp_email(email, otp, user.user_type)
+                except CustomUser.DoesNotExist:
+                    request.session['reset_email'] = email
                 
-                PasswordResetOTP.create_otp(user, otp)
-                request.session['reset_email'] = email
-                
-                if send_otp_email(email, otp, user.user_type):
-                    return redirect('accounts:otp_confirmation')
-                else:
-                    if not settings.SENDGRID_API_KEY:
-                        error = "Email service not configured. Please contact support."
-                    else:
-                        error = "Failed to send OTP. Please try again later."
-            except CustomUser.DoesNotExist:
-                error = "No account found with this email address."
+                return redirect('accounts:otp_confirmation')
     
-    return render(request, 'accounts/forgot_password.html', {'error': error, 'success': success})
+    return render(request, 'accounts/forgot_password.html', {'error': error})
 
 def otp_confirmation(request):
     error = None
@@ -388,20 +390,28 @@ def otp_confirmation(request):
     email = request.session.get('reset_email')
     
     if request.method == 'POST':
-        entered_otp = request.POST.get('otp')
-        
-        try:
-            user = CustomUser.objects.get(email=email)
-            otp_record = PasswordResetOTP.objects.filter(user=user, is_used=False).latest('created_at')
-            
-            if otp_record.verify_otp(entered_otp):
-                request.session['otp_verified'] = True
-                request.session['otp_id'] = otp_record.id
-                return redirect('accounts:change_password')
-            else:
-                error = "Invalid or expired OTP. Please try again."
-        except (CustomUser.DoesNotExist, PasswordResetOTP.DoesNotExist):
-            error = "Invalid OTP. Please request a new one."
+        from django.core.cache import cache
+        attempts_key = f'otp_attempts:{email}'
+        attempts = cache.get(attempts_key, 0)
+        if attempts >= 5:
+            error = "Too many failed attempts. Please request a new OTP."
+        else:
+            entered_otp = request.POST.get('otp')
+            try:
+                user = CustomUser.objects.get(email=email)
+                otp_record = PasswordResetOTP.objects.filter(user=user, is_used=False).latest('created_at')
+                
+                if otp_record.verify_otp(entered_otp):
+                    cache.delete(attempts_key)
+                    request.session['otp_verified'] = True
+                    request.session['otp_id'] = otp_record.id
+                    return redirect('accounts:change_password')
+                else:
+                    cache.set(attempts_key, attempts + 1, 300)
+                    error = "Invalid or expired OTP. Please try again."
+            except (CustomUser.DoesNotExist, PasswordResetOTP.DoesNotExist):
+                cache.set(attempts_key, attempts + 1, 300)
+                error = "Invalid OTP. Please request a new one."
     
     return render(request, 'accounts/otp_confirmation.html', {'error': error, 'email': email})
 
@@ -417,9 +427,14 @@ def change_password(request):
         
         if password != confirm_password:
             error = "Passwords do not match."
-        elif len(password) < 8:
-            error = "Password must be at least 8 characters."
         else:
+            from django.contrib.auth.password_validation import validate_password
+            try:
+                validate_password(password)
+            except Exception as e:
+                error = ' '.join(e.messages)
+        
+        if not error:
             email = request.session.get('reset_email')
             otp_id = request.session.get('otp_id')
             

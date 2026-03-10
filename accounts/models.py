@@ -1,8 +1,21 @@
 from django.contrib.auth.models import AbstractUser
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 from datetime import timedelta
 import hashlib
+
+
+MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5MB
+ALLOWED_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp']
+
+
+def validate_image_file(file):
+    if file.size > MAX_IMAGE_SIZE:
+        raise ValidationError(f'Image must be under 5MB. Yours is {file.size / (1024*1024):.1f}MB.')
+    ext = file.name.rsplit('.', 1)[-1].lower()
+    if ext not in ALLOWED_IMAGE_EXTENSIONS:
+        raise ValidationError(f'Only JPG, PNG, GIF, WebP images are allowed.')
 
 
 class CustomUser(AbstractUser):
@@ -34,7 +47,7 @@ class UserProfile(models.Model):
     phone = models.CharField(max_length=20, blank=True)
     location = models.CharField(max_length=100, blank=True)
     bio = models.TextField(blank=True)
-    profile_photo = models.ImageField(upload_to='user_photos/', blank=True, null=True)
+    profile_photo = models.ImageField(upload_to='user_photos/', blank=True, null=True, validators=[validate_image_file])
     
     # Professional Info
     skills = models.CharField(max_length=500, blank=True, help_text="Comma separated skills")
@@ -116,7 +129,7 @@ class CompanyProfile(models.Model):
     phone = models.CharField(max_length=20, blank=True)
     location = models.CharField(max_length=100, blank=True)
     bio = models.TextField(blank=True, help_text="Company description")
-    logo = models.ImageField(upload_to='company_logos/', blank=True, null=True)
+    logo = models.ImageField(upload_to='company_logos/', blank=True, null=True, validators=[validate_image_file])
     
     # Business Info
     industry = models.CharField(max_length=100, blank=True)
