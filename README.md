@@ -1,170 +1,79 @@
-# Remotely - Internship Platform
+# Remotely - Internship & Job Platform
 
-A full-stack internship platform built with Django where companies can post internships and students can apply.
+A full-stack platform built with Django where companies can post jobs/internships and candidates can apply, chat, and get AI-screened.
 
 ![Python](https://img.shields.io/badge/Python-3.10+-blue)
 ![Django](https://img.shields.io/badge/Django-6.0-green)
 ![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.0-cyan)
-
-## 🎯 Project Overview
-
-**Remotely** is a role-based internship platform that connects companies with students seeking internship opportunities.
-
-### Key Features
-
-| Feature | Description |
-|---------|-------------|
-| **Role-Based Access** | Separate dashboards for Companies and Students |
-| **Internship Posting** | Companies can post paid/unpaid internships |
-| **Application System** | Students can apply with CV upload |
-| **Status Tracking** | Track applications (Pending → Accepted/Rejected) |
-| **Search & Filter** | Find internships by skills, type, location |
-| **Secure Authentication** | OTP-based password reset |
+![CI](https://github.com/saujankhnl/remotely_internship/actions/workflows/ci.yml/badge.svg)
 
 ---
 
-## 🏗️ Architecture
+## 🎯 Features
 
-### Database Schema (ER Diagram)
-
-```
-┌─────────────────┐       ┌─────────────────┐
-│   CustomUser    │       │   UserProfile   │
-├─────────────────┤       ├─────────────────┤
-│ id (PK)         │──────>│ user (FK)       │
-│ username        │       │ full_name       │
-│ email           │       │ phone           │
-│ password        │       │ skills          │
-│ user_type       │       │ resume          │
-│ (user/company)  │       │ linkedin        │
-└────────┬────────┘       └─────────────────┘
-         │
-         │ (if company)
-         v
-┌─────────────────┐       ┌─────────────────┐
-│ CompanyProfile  │       │   Internship    │
-├─────────────────┤       ├─────────────────┤
-│ user (FK)       │       │ id (PK)         │
-│ company_name    │       │ company (FK)────┼───> CustomUser
-│ industry        │       │ title           │
-│ logo            │       │ description     │
-└─────────────────┘       │ type (paid/     │
-                          │      unpaid)    │
-                          │ skills_required │
-                          │ status (open/   │
-                          │        closed)  │
-                          └────────┬────────┘
-                                   │
-                                   v
-                          ┌─────────────────┐
-                          │  Application    │
-                          ├─────────────────┤
-                          │ internship (FK) │
-                          │ applicant (FK)──┼───> CustomUser
-                          │ full_name       │
-                          │ cv (file)       │
-                          │ status          │
-                          │ applied_at      │
-                          └─────────────────┘
-```
-
-### Key Relationships
-
-| Relationship | Type | Description |
-|--------------|------|-------------|
-| User → Profile | One-to-One | Each user has one profile |
-| Company → Internships | One-to-Many | Company can post many internships |
-| Internship → Applications | One-to-Many | Internship can receive many applications |
-| User → Applications | One-to-Many | User can apply to many internships |
-| User + Internship | Unique Together | User can apply only once per internship |
+| Module | Features |
+|--------|----------|
+| **Auth** | Registration, Login, OTP password reset, Google/LinkedIn social login |
+| **Jobs & Internships** | Create, edit, search, filter, bookmark, premium listings |
+| **Applications** | Apply with CV, status tracking, structured remarks, rejection/acceptance tags |
+| **ATS Screening** | Auto-screening with weighted scoring, ranked applicants, screening analytics |
+| **Chat** | Real-time messaging (WebSocket + AJAX fallback), file attachments |
+| **Interviews** | Schedule, reschedule, cancel, complete with notes |
+| **Assessments** | Timed skill tests, MCQ, verified badges, attempt limits |
+| **Resume Builder** | Generate PDF resumes from profile data (multiple templates) |
+| **Notifications** | In-app notifications with real-time count, mark read |
+| **Analytics** | Job views, application funnels, company dashboard, screening analytics |
+| **Advanced Search** | Smart query parsing, skill matching, saved searches, trending searches |
 
 ---
 
-## 🔐 Security Features
-
-### Role-Based Access Control
-
-```python
-# Decorators ensure only authorized users access views
-@company_required  # Only companies can post internships
-@user_required     # Only students can apply
-```
-
-### Data Protection
-
-- ✅ Companies can only see their own internships and applicants
-- ✅ Students can only see their own applications
-- ✅ URL manipulation is prevented (e.g., changing `/application/5/` to `/application/6/`)
-- ✅ Duplicate application prevention (database constraint)
-- ✅ CV file validation (PDF/DOC only, max 5MB)
-- ✅ OTP stored as hash (not plain text)
-
----
-
-## 📊 Dashboard Features
-
-### Company Dashboard
-- Total Posts count (jobs + internships)
-- Total Applications received and status breakdown
-- Pending applications to review
-- Total profile views and unread chat/notification alerts
-- List of internships with application counts
-- Quick actions: Post new, View applicants, view analytics, check messages/alerts
-
-### Student Dashboard
-- Total applications sent (jobs + internships)
-- Pending/Accepted/Rejected counts plus interview requests
-- Available internships and jobs to browse
-- Saved jobs count
-- Resumes created and quick resume builder
-- Badges earned from assessments and link to skill tests
-- Unread notifications and chat messages
-- Recent applications with status
-
----
-
-## 🚀 Installation
+## 🚀 Quick Start
 
 ### Prerequisites
-- Python 3.10+
-- pip (Python package manager)
 
-### Setup Steps
+- Python 3.10+
+- pip
+
+### Setup
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/yourusername/remotely-internship.git
-cd remotely-internship
+# Clone
+git clone https://github.com/saujankhnl/remotely_internship.git
+cd remotely_internship
 
-# 2. Create virtual environment
+# Virtual environment
 python -m venv env
+env\Scripts\activate        # Windows
+# source env/bin/activate   # Linux/Mac
 
-# 3. Activate virtual environment
-# Windows:
-env\Scripts\activate
-# Linux/Mac:
-source env/bin/activate
-
-# 4. Install dependencies
+# Install dependencies
 pip install -r requirements.txt
 
-# 5. Run migrations
-python manage.py migrate
+# Environment variables
+cp .env.example .env
+# Edit .env with your values (optional for development)
 
-# 6. Create superuser (admin)
+# Database
+python manage.py migrate
 python manage.py createsuperuser
 
-# 7. Start development server
+# Run
 python manage.py runserver
 ```
 
-### Environment Variables (Optional)
+Visit `http://127.0.0.1:8000/`
 
-```bash
-# For email functionality (SendGrid)
-set SENDGRID_API_KEY=your_api_key
-set DEFAULT_FROM_EMAIL=your@email.com
-```
+### Environment Variables
+
+Copy `.env.example` to `.env`. All variables have sensible defaults for development. See [.env.example](.env.example) for the full list.
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DJANGO_SECRET_KEY` | Production | Django secret key |
+| `DJANGO_DEBUG` | No | `True` (default) or `False` |
+| `SENDGRID_API_KEY` | For emails | SendGrid API key |
+| `GOOGLE_CLIENT_ID` | For social login | Google OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | For social login | Google OAuth secret |
 
 ---
 
@@ -172,37 +81,69 @@ set DEFAULT_FROM_EMAIL=your@email.com
 
 ```
 remotely_internship/
-├── accounts/              # User authentication & profiles
-│   ├── models.py          # CustomUser, UserProfile, CompanyProfile
-│   ├── views.py           # Login, Register, Dashboard
-│   ├── forms.py           # Registration & Profile forms
-│   └── templates/         # Auth templates
-│
-├── internships/           # Core internship functionality
-│   ├── models.py          # Internship, Application
-│   ├── views.py           # CRUD operations
-│   ├── forms.py           # Internship & Application forms
-│   └── templates/         # Internship templates
-│
+├── accounts/              # Auth, profiles, admin dashboard
+├── internships/           # Jobs, internships, applications, ATS, analytics
+├── chat/                  # Real-time messaging (WebSocket + AJAX)
+├── notifications/         # In-app notification system
+├── resume/                # PDF resume builder
+├── assessments/           # Skill assessments & badges
 ├── theme/                 # TailwindCSS configuration
-├── media/                 # User uploads (CVs, photos)
-├── manage.py
-└── README.md
+├── remotely_internship/   # Django project settings
+├── docs/                  # Documentation
+│   └── DATABASE.md        # Database schema & setup guide
+├── .github/workflows/     # CI/CD pipeline
+│   └── ci.yml             # Tests, linting on push/PR
+├── .env.example           # Environment variables template
+├── requirements.txt       # Python dependencies
+└── manage.py
 ```
 
 ---
 
-## 🧪 Testing the Application
+## 🗄️ Database
 
-### Test Scenarios
+- **Development**: SQLite (zero config)
+- **Production**: PostgreSQL recommended
 
-1. **Register as Company** → Post internship → View applications
-2. **Register as Student** → Browse internships → Apply → Track status
-3. **Password Reset** → Enter email → Check terminal for OTP → Reset password
+See [docs/DATABASE.md](docs/DATABASE.md) for full schema documentation, setup instructions, and common commands.
 
-### Admin Panel
+---
 
-Access at: `http://127.0.0.1:8000/admin/`
+## 🔐 Security
+
+- Environment-based secrets (`SECRET_KEY`, API keys)
+- Role-based access (`@company_required`, `@user_required`, `@company_approved_required`)
+- Rate-limited OTP requests and brute-force protection
+- Django password validators enforced on registration and reset
+- Server-side file upload validation (type, size)
+- CSRF protection on all forms
+- Secure cookie settings auto-enabled in production
+- HSTS, SSL redirect, content-type sniffing protection
+
+---
+
+## 🧪 Testing
+
+```bash
+# Run all tests
+python manage.py test
+
+# Run specific app tests
+python manage.py test accounts
+```
+
+CI runs automatically on push/PR to `main` via GitHub Actions.
+
+---
+
+## 📊 Admin Panel
+
+Access at `http://127.0.0.1:8000/admin/`
+
+- Manage users, companies, approval workflows
+- Bulk approve/reject/suspend companies
+- View all jobs, internships, applications
+- Manage skill assessments and questions
 
 ---
 
@@ -210,41 +151,18 @@ Access at: `http://127.0.0.1:8000/admin/`
 
 | Endpoint | Method | Access | Description |
 |----------|--------|--------|-------------|
-| `/` | GET | Public | Registration page |
-| `/login/` | GET/POST | Public | Login |
+| `/` | GET | Public | Registration |
+| `/login/` | POST | Public | Login |
 | `/dashboard/` | GET | Auth | Role-based dashboard |
 | `/internships/` | GET | Public | Browse internships |
-| `/internships/create/` | POST | Company | Create internship |
-| `/internships/<id>/apply/` | POST | Student | Apply to internship |
-| `/internships/my-internships/` | GET | Company | My posted internships |
-| `/internships/my-applications/` | GET | Student | My applications |
-
----
-
-## 🎤 Interview Preparation
-
-### How to Explain This Project
-
-> "I built a full-stack internship platform using Django. It has two user roles - Companies and Students. Companies can post internships with required skills, and students can apply by uploading their CV. I implemented role-based access control, secure file uploads, and OTP-based password reset. The dashboard shows real-time statistics based on database queries."
-
-### Key Technical Points to Mention
-
-1. **Django ORM** - Used for database operations
-2. **Role-Based Access** - Custom decorators for authorization
-3. **File Upload Security** - Validated file types and size limits
-4. **Database Constraints** - Prevented duplicate applications
-5. **Responsive UI** - TailwindCSS for mobile-friendly design
-
-### Common Interview Questions
-
-**Q: How do you prevent a user from applying twice?**
-> A: I used Django's `UniqueConstraint` on `(internship, applicant)` fields. This ensures the database rejects duplicate applications.
-
-**Q: How do you handle different user roles?**
-> A: I added a `user_type` field to the User model and created custom decorators (`@company_required`, `@user_required`) that check the user's role before allowing access.
-
-**Q: How do you secure file uploads?**
-> A: I validate file extension (PDF/DOC only), check file size (max 5MB), and store files in a protected media directory.
+| `/internships/jobs/` | GET | Public | Browse jobs |
+| `/internships/search/` | GET | Public | Advanced search |
+| `/internships/create/` | POST | Company | Post internship |
+| `/internships/jobs/create/` | POST | Company | Post job |
+| `/chat/` | GET | Auth | Chat list |
+| `/assessments/` | GET | User | Skill assessments |
+| `/resume/` | GET | User | Resume builder |
+| `/notifications/` | GET | Auth | Notifications |
 
 ---
 
@@ -252,8 +170,6 @@ Access at: `http://127.0.0.1:8000/admin/`
 
 This project is for educational purposes.
 
----
-
 ## 👨‍💻 Author
 
-Built as a learning project to demonstrate full-stack Django development.
+Built by [saujankhnl](https://github.com/saujankhnl)
