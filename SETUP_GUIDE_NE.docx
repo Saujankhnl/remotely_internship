@@ -1,0 +1,50 @@
+# SETUP GUIDE FOR REMOTELY_INTERNSHIP PROJECT
+
+## १. prerequisites (पूर्वापेक्षा):
+   1. A computer with internet access (इन्टरनेटको पहुँच भएको कम्प्युटर).
+   2. Git installed (गिट इन्स्टल गरिएको हुनु आवश्यक छ).
+      - You can download it from [git-scm.com](https://git-scm.com) (यसलाई [git-scm.com](https://git-scm.com) बाट डाउनलोड गर्न सक्नुहुन्छ).
+   3. A code editor (कोड सम्पादक), e.g., Visual Studio Code, Sublime Text, etc.
+
+## २. Cloning the Project (प्रोजेक्ट क्लोन गर्नुहोस्):
+   1. Open your terminal/command prompt (टर्मिनल/कमांड प्रॉम्प्ट खोल्नुहोस्).
+   2. Navigate to the directory where you want to store the project (जहाँ तपाईं प्रोजेक्ट राख्न चाहनुहुन्छ त्यहाँको डिरेक्टरीमा जानुहोस्).
+   3. Run the following command to clone the repository:
+      ```bash
+      git clone https://github.com/owner/remotely_internship.git
+      ```
+      (यहाँ `owner` लाई वास्तविक GitHub प्रयोगकर्ता नाम संग बदल्नुहोस्).
+
+## ३. Installing Dependencies (आवश्यकता इन्स्टल गर्नुहोस्):
+   1. Navigate into the project directory:
+      ```bash
+      cd remotely_internship
+      ```
+   2. Install the required dependencies using npm (यदि प्रोजेक्ट Node.js मा आधारित छ):
+      ```bash
+      npm install
+      ```
+
+## ४. Configuration (संरचना):
+   1. Create a `.env` file from the `.env.example` file:
+      ```bash
+      cp .env.example .env
+      ```
+   2. Open the `.env` file and enter your configuration settings (अपनी संरचना सेटिंगहरू प्रविष्ट गर्नुहोस्).
+
+## ५. Running the Project (प्रोजेक्ट चलाउनुहोस्):
+   1. To start the project, run:
+      ```bash
+      npm start
+      ```
+   2. Open your browser and navigate to `http://localhost:3000` to see the running application (अपने ब्राउजरमा `http://localhost:3000` मा जानुहोस्).
+
+## ६. Troubleshooting Tips (समस्या समाधानका लागि सुझावहरू):
+   1. If you encounter errors during installation:
+      - Make sure you have all prerequisites installed (सबै पूर्वापेक्षा इन्स्टल गरिएको छ भने सुनिश्चित गर्नुहोस्).
+      - Check your internet connection (तपाईंको इन्टरनेट जडान जाँच गर्नुहोस्).
+   2. If the application doesn't start:
+      - Ensure the correct scripts are referenced in your `package.json` (तपाईंको `package.json` मा सही स्क्रिप्टमा जनाइएका छन् भने सुनिश्चित गर्नुहोस्).
+
+## ७. Support (समर्थन):
+   - If you continue to experience issues, please open an issue in the repository or contact the support team (यदि तपाईं समस्याहरू भोगिरहनु भएको छ भने, कृपया रिपोजिटरीमा मुद्दा खोल्नुहोस् वा समर्थन टोलीलाई सम्पर्क गर्नुहोस्).
