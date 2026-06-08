@@ -6,6 +6,7 @@ A full-stack platform built with Django where companies can post jobs/internship
 ![Django](https://img.shields.io/badge/Django-6.0-green)
 ![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.0-cyan)
 ![CI](https://github.com/saujankhnl/remotely_internship/actions/workflows/ci.yml/badge.svg)
+<img width="1893" height="1051" alt="Screenshot 2026-06-08 123542" src="https://github.com/user-attachments/assets/2af5f2f6-b4d2-4b6d-ad50-e336b06c1092" />
 
 ---
 
